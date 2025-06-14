@@ -10,9 +10,9 @@ import re
 chatbot_bp = Blueprint('chatbot', __name__)
 
 # === OpenRouter GPT-4o (Valid Model)
-OPENROUTER_API_KEY = "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"
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-QWEN_MODEL = "openai/gpt-4o"
+OPENROUTER_API_KEY = "your_API_KEY"
+OPENROUTER_API_URL = "your_API_URl"
+QWEN_MODEL = "your model"
 
 # Enhanced FAQ for Votonomy-specific questions
 faq_questions = [
@@ -55,7 +55,7 @@ faq_answers = [
     "Pakistan's national symbols include the crescent and star flag (green and white), the national anthem 'Qaumi Taranah', and the national flower Jasmine."
 ]
 
-model = SentenceTransformer('all-MiniLM-L6-v2')
+model = SentenceTransformer('your_sentence_Model')
 # ✅ Generate embeddings after FAQ questions are defined
 faq_embeddings = model.encode(faq_questions, convert_to_tensor=True)
 
