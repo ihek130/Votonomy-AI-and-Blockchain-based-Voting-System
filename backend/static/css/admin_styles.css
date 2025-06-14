@@ -1,0 +1,150 @@
+/* admin_styles.css */
+
+/* Overall Background with Pakistan Flag (light opacity) */
+.admin-bg {
+  background-color: #f9f9f9;
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-bg::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('../images/pakistan_flag.png') no-repeat center center;
+  background-size: cover;
+  opacity: 0.2;
+  z-index: -1;
+  transform: perspective(500px) rotateX(2deg);
+}
+
+/* Top Bar – Dark green gradient inspired by Pakistan’s flag */
+.admin-topbar {
+  background: linear-gradient(135deg, #006600, #008000); /* Dark green shades */
+  padding: 12px 20px;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Logout button positioned on the top right */
+.logout-btn {
+  position: absolute;
+  right: 20px;
+  top: 12px;
+  color: #fff;
+  border-color: #fff;
+}
+
+/* Centered Navbar Brand */
+.admin-topbar .navbar-brand {
+  font-weight: bold;
+  color: #fff;
+}
+
+/* Main Container Layout */
+.admin-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar – Lighter green inspired by Pakistan’s flag with 3D effects */
+.admin-sidebar {
+  width: 240px;
+  background: linear-gradient(135deg, #00A86B, #66FF99);
+  padding: 20px;
+  color: #fff;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.15);
+}
+
+/* Sidebar Header */
+.sidebar-header {
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
+
+/* Sidebar Links with enhanced 3D effects */
+.admin-sidebar .nav-link {
+  color: #fff;
+  padding: 12px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  transition: background 0.3s, transform 0.3s;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.admin-sidebar .nav-link:hover {
+  background-color: rgba(0, 128, 0, 0.8);
+  transform: translateX(8px);
+}
+
+/* Main Content Area */
+.admin-content {
+  flex: 1;
+  padding: 30px;
+}
+
+/* 3D Card Effect for Dashboard blocks and other content */
+.admin-card-3d {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15),
+              0 8px 16px rgba(0,0,0,0.15);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  margin-bottom: 20px;
+}
+
+.admin-card-3d:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2),
+              0 16px 32px rgba(0,0,0,0.2);
+}
+
+/* Custom Button Styles */
+.btn-primary {
+  background-color: #FF6F61; /* Modern Orange for buttons */
+  border: none;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.btn-primary:hover {
+  background-color: #ff8477;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(0,0,0,0.1);
+}
+/* 3D Card Effect */
+.card-3d {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1),
+              0 8px 16px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card-3d:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15),
+              0 16px 32px rgba(0, 0, 0, 0.15);
+}
+
+/* Helper class for card stats */
+.card-stat {
+  cursor: pointer;
+  color: #333;
+}
+
+/* Navbar brand styling */
+.navbar-brand {
+  font-weight: bold;
+  color: #fff;
+}
+

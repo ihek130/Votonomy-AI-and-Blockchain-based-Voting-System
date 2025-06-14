@@ -1,0 +1,19 @@
+{% extends "base_admin.html" %}
+{% block title %}Add a New Voter{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h3>Add a New Voter</h3>
+  <form method="POST" action="{{ url_for('admin_bp.add_voter') }}">
+    <div class="mb-3">
+      <label for="name" class="form-label">Voter Name</label>
+      <input type="text" class="form-control" id="name" name="name" required>
+    </div>
+    <div class="mb-3">
+      <label for="voter_id" class="form-label">Voter ID</label>
+      <input type="text" class="form-control" id="voter_id" name="voter_id" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Add Voter</button>
+    <a href="{{ url_for('admin_bp.manage_voters') }}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}

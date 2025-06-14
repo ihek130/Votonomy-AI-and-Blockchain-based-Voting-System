@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Voter Registration{% endblock %}
+{% block content %}
+<div class="user-card-3d mx-auto" style="max-width:600px; max-height: 90vh; overflow-y: auto;">
+  <h2 class="text-center">Voter Registration</h2>
+
+  <!-- ✅ Flash message block -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- ✅ Show Voter ID (Read-only) for confirmation -->
+  <div class="mb-3">
+    <label class="form-label">Your Voter ID:</label>
+    <input type="text" class="form-control" value="{{ session.voter_id }}" readonly disabled style="background-color: #f8f9fa; color: #6c757d;">
+    <small class="form-text text-muted">✅ Already verified in previous step</small>
+  </div>
+
+  <form method="POST">
+    <div class="mb-3">
+      <label for="name" class="form-label">Full Name:</label>
+      <input type="text" class="form-control" id="name" name="name" required>
+    </div>
+
+    <div class="mb-3">
+      <label for="father_name" class="form-label">Father's Name:</label>
+      <input type="text" class="form-control" id="father_name" name="father_name" required>
+    </div>
+
+    <div class="mb-3">
+      <label for="id_card" class="form-label">CNIC:</label>
+      <input type="text" class="form-control" id="id_card" name="id_card"
+             placeholder="e.g. 12345-1234567-1" pattern="\d{5}-\d{7}-\d{1}" required>
+    </div>
+
+    <div class="mb-3">
+      <label for="age" class="form-label">Age:</label>
+      <input type="number" class="form-control" id="age" name="age" required>
+    </div>
+
+    <div class="mb-3">
+      <label for="gender" class="form-label">Gender:</label>
+      <select class="form-control" id="gender" name="gender" required>
+        <option value="">Select Gender</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label for="province" class="form-label">Province:</label>
+      <input type="text" class="form-control" id="province" name="province" required>
+    </div>
+
+    <div class="mb-3">
+      <label for="city" class="form-label">City:</label>
+      <input type="text" class="form-control" id="city" name="city" required>
+    </div>
+
+    <div class="mb-3">
+      <label for="address" class="form-label">Complete Address:</label>
+      <input type="text" class="form-control" id="address" name="address" placeholder="e.g. House No. 48, Sector I-8/2, Islamabad" required>
+    </div>
+
+    <div class="mb-3">
+      <label for="town" class="form-label">Town (optional):</label>
+      <input type="text" class="form-control" id="town" name="town">
+    </div>
+
+    <div class="mb-3">
+      <label for="phone" class="form-label">Phone (optional):</label>
+      <input type="text" class="form-control" id="phone" name="phone">
+    </div>
+
+    <button type="submit" class="btn-user w-100">Complete Registration</button>
+  </form>
+</div>
+
+<!-- ✅ Auto-dismiss & clear messages on page change -->
+<script>
+  setTimeout(() => {
+    document.querySelectorAll('.alert').forEach(el => {
+      el.classList.remove('show');
+      el.classList.add('d-none');
+    });
+  }, 5000);
+
+  window.addEventListener("beforeunload", function () {
+    document.querySelectorAll('.alert').forEach(el => el.classList.add('d-none'));
+  });
+</script>
+{% endblock %}

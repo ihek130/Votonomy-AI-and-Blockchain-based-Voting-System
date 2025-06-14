@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Post-Election Survey{% endblock %}
+{% block content %}
+<div class="user-card-3d mx-auto" style="max-width:600px;">
+  <h2 class="text-center">Post-Election Survey</h2>
+  <form method="POST">
+    <div class="mb-3">
+      <label for="question1" class="form-label">How satisfied are you with the election process?</label>
+      <select class="form-control" id="question1" name="question1" required>
+        <option value="">Select an option</option>
+        <option value="Very Satisfied">Very Satisfied</option>
+        <option value="Satisfied">Satisfied</option>
+        <option value="Neutral">Neutral</option>
+        <option value="Dissatisfied">Dissatisfied</option>
+        <option value="Very Dissatisfied">Very Dissatisfied</option>
+      </select>
+    </div>
+    <div class="mb-3">
+      <label for="question2" class="form-label">What issues did you face, if any?</label>
+      <textarea class="form-control" id="question2" name="question2" rows="3" placeholder="Describe any issues..."></textarea>
+    </div>
+    <button type="submit" class="btn-user w-100">Submit Survey</button>
+  </form>
+</div>
+{% endblock %}

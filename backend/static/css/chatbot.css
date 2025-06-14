@@ -1,0 +1,445 @@
+/* 🔘 Chatbot Launcher Icon */
+.chatbot-icon {
+  position: fixed;
+  bottom: 25px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(145deg, #1a1f24, #0e1215);
+  color: #00ff88;
+  border-radius: 50%;
+  font-size: 28px;
+  text-align: center;
+  line-height: 60px;
+  cursor: pointer !important;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
+  transition: all 0.3s ease;
+  border: none;
+  outline: none;
+  user-select: none;
+}
+
+.chatbot-icon:hover {
+  cursor: pointer !important;
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 255, 136, 0.4);
+}
+
+.chatbot-icon i {
+  cursor: pointer !important;
+  pointer-events: none;
+}
+
+/* 🪟 Chatbot Main Window */
+.chatbot-window {
+  position: fixed;
+  bottom: 100px;
+  right: 30px;
+  width: 380px;
+  max-height: 550px;
+  background: #0f151a;
+  color: #d8fdee;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 255, 136, 0.2);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 9999;
+  font-family: 'Segoe UI', sans-serif;
+  border: 1px solid #00ff8833;
+  cursor: default !important;
+}
+
+/* 🟩 Header Section */
+.chatbot-header {
+  background-color: #1e252c;
+  color: #00ff88;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  font-size: 16px;
+  border-bottom: 1px solid #1a1a1a;
+  cursor: default !important;
+}
+
+.chatbot-header span {
+  cursor: pointer !important;
+  font-size: 20px;
+  font-weight: bold;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  user-select: none;
+  color: #00ff88;
+}
+
+.chatbot-header span:hover {
+  background-color: rgba(0, 255, 136, 0.2);
+  cursor: pointer !important;
+  color: #ffffff;
+}
+
+/* 💬 Message Container */
+.chatbot-body {
+  padding: 15px;
+  height: 370px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #0f151a;
+  cursor: default !important;
+  scroll-behavior: smooth;
+}
+
+/* ⌨️ Input Section */
+.chatbot-input {
+  padding: 12px;
+  border-top: 1px solid #1a1a1a;
+  background: #101820;
+}
+
+.chatbot-input input {
+  width: 100%;
+  padding: 10px 12px;
+  background: #1b242e;
+  color: #00ff88;
+  border: 1px solid #00ff8866;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  cursor: text !important;
+  transition: all 0.3s ease;
+}
+
+.chatbot-input input:focus {
+  border-color: #00ff88;
+  box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.1);
+}
+
+/* 👤 User & Bot Message Bubbles */
+.user, .bot {
+  display: flex;
+  flex-direction: column;
+  max-width: 85%;
+  cursor: default !important;
+}
+
+.user {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.bot {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.message {
+  padding: 10px 14px;
+  border-radius: 16px;
+  background-color: #1e252c;
+  color: #d8fdee;
+  font-size: 13.5px;
+  line-height: 1.4;
+  position: relative;
+  cursor: default !important;
+  word-wrap: break-word;
+  animation: slideIn 0.3s ease;
+}
+
+.user .message {
+  background-color: #00ff8866;
+  color: #000;
+  border-bottom-right-radius: 4px;
+}
+
+.bot .message {
+  border-bottom-left-radius: 4px;
+  border: 1px solid #00ff8822;
+}
+
+/* ⏱️ Timestamps */
+.timestamp {
+  font-size: 10px;
+  margin-top: 4px;
+  color: #7c7c7c;
+  cursor: default !important;
+}
+
+/* ⌛ Typing Indicator */
+.typing {
+  font-style: italic;
+  background-color: #222;
+  color: #999;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  cursor: default !important;
+}
+
+/* 📚 FAQ Buttons */
+.faq-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.faq-buttons button,
+.faq-btn {
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+  background: #1a1f24 !important;
+  color: #00ff88 !important;
+  border: 1px solid #00ff8855 !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease-in-out !important;
+  outline: none !important;
+  user-select: none !important;
+  white-space: nowrap !important;
+}
+
+.faq-buttons button:hover,
+.faq-btn:hover {
+  background-color: #00ff88 !important;
+  color: #000 !important;
+  cursor: pointer !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3) !important;
+}
+
+/* ✨ Keyword highlight */
+.highlight {
+  background-color: #00ff8844;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+/* 🤖 Bot Avatar */
+.bot-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  margin-bottom: 5px;
+  background: linear-gradient(135deg, #00ff88, #00cc6a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  font-weight: bold;
+  font-size: 12px;
+  cursor: default !important;
+}
+
+/* 💬 Typing Animation - 3 Dots */
+.dot-flashing {
+  position: relative;
+  width: 40px;
+  height: 12px;
+  margin: 5px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dot-flashing::before,
+.dot-flashing::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background-color: #00ff88;
+  border-radius: 50%;
+  animation: typing 1.4s infinite;
+}
+
+.dot-flashing::before {
+  animation-delay: 0s;
+}
+
+.dot-flashing::after {
+  animation-delay: 0.2s;
+}
+
+.dot-flashing {
+  background-color: #00ff88;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  animation: typing 1.4s infinite;
+  animation-delay: 0.4s;
+}
+
+@keyframes typing {
+  0%, 60%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ✅ Message Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 📱 Scrollbar Styling */
+.chatbot-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chatbot-body::-webkit-scrollbar-track {
+  background: #1a1f24;
+  border-radius: 3px;
+}
+
+.chatbot-body::-webkit-scrollbar-thumb {
+  background: #00ff88;
+  border-radius: 3px;
+}
+
+.chatbot-body::-webkit-scrollbar-thumb:hover {
+  background: #00cc6a;
+}
+
+/* 🎨 Enhanced Message Formatting */
+.message strong {
+  color: #00ff88;
+  font-weight: 600;
+}
+
+.message br {
+  line-height: 1.6;
+}
+
+/* 📱 Responsive Design */
+@media (max-width: 768px) {
+  .chatbot-window {
+    width: 320px;
+    height: 450px;
+    right: 15px;
+    bottom: 85px;
+  }
+  
+  .chatbot-icon {
+    right: 15px;
+    bottom: 15px;
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+    line-height: 50px;
+  }
+  
+  .chatbot-body {
+    height: 300px;
+    padding: 12px;
+  }
+  
+  .message {
+    font-size: 13px;
+  }
+}
+
+/* 🔒 Ensure All Interactive Elements Have Proper Cursors */
+button, .chatbot-icon, .chatbot-header span, .faq-btn, .faq-buttons button {
+  cursor: pointer !important;
+}
+
+/* 🚫 Prevent Text Cursor on Non-Input Elements */
+.chatbot-window, .chatbot-header, .chatbot-body, .message, .timestamp, .typing {
+  cursor: default !important;
+}
+
+/* ✅ Status Badges for Complaint Responses */
+.status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  margin: 2px 4px;
+}
+
+.status-pending {
+  background: #ffc107;
+  color: #000;
+}
+
+.status-progress {
+  background: #17a2b8;
+  color: #fff;
+}
+
+.status-resolved {
+  background: #00ff88;
+  color: #000;
+}
+
+/* 🎯 Loading State */
+.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* 🎨 Enhanced UI Elements */
+.chatbot-window::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #00ff88, #00cc6a);
+  z-index: 1;
+}
+
+/* 📋 Better Text Selection */
+::selection {
+  background: rgba(0, 255, 136, 0.3);
+  color: #fff;
+}
+
+/* 🔧 Fix for Text Rendering */
+.chatbot-window * {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 🎭 Emoji Enhancement */
+.message span[style*="font-size: 16px"] {
+  display: inline-block;
+  margin: 0 2px;
+}
+
+/* 🌟 Accessibility Improvements */
+.chatbot-icon:focus,
+.chatbot-header span:focus,
+.faq-btn:focus,
+button:focus {
+  outline: 2px solid #00ff88;
+  outline-offset: 2px;
+}
+
+/* 📝 Input Placeholder Styling */
+.chatbot-input input::placeholder {
+  color: #7c7c7c;
+  font-style: italic;
+}

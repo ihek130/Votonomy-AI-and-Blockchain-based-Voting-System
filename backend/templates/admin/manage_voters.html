@@ -1,0 +1,86 @@
+{% extends "base_admin.html" %}
+{% block title %}Manage Voters{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h3>Manage Voters</h3>
+  
+  <!-- Approved Voters Section with Scroll -->
+  <div class="admin-card-3d p-3 mb-4">
+    <h5>Approved Voters</h5>
+    {% if voters|length == 0 %}
+      <p>No registered voters.</p>
+    {% else %}
+    <div style="max-height: 300px; overflow-y: auto;">
+      <table class="table table-striped mt-3">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Voter ID</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for voter in voters %}
+          <tr>
+            <td>{{ voter.name }}</td>
+            <td>{{ voter.voter_id }}</td>
+            <td>
+              <form method="POST" action="{{ url_for('admin_bp.delete_voter', voter_id=voter.voter_id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+  
+  <!-- Pending Voter Requests Section with Scroll -->
+  <div class="admin-card-3d p-3">
+    <h5>Pending Voter Requests</h5>
+    {% if pending_voter_requests|length == 0 %}
+      <p>No pending requests.</p>
+    {% else %}
+    <div style="max-height: 300px; overflow-y: auto;">
+      <table class="table table-striped mt-3">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>ID Card</th>
+            <th>Age</th>
+            <th>Province</th>
+            <th>City</th>
+            <th>Town</th>
+            <th>Phone</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for req in pending_voter_requests %}
+          <tr>
+            <td>{{ req.name }}</td>
+            <td>{{ req.id_card }}</td>
+            <td>{{ req.age }}</td>
+            <td>{{ req.province }}</td>
+            <td>{{ req.city }}</td>
+            <td>{{ req.town or "N/A" }}</td>
+            <td>{{ req.phone }}</td>
+            <td>
+              <form method="POST" action="{{ url_for('admin_bp.approve_voter', voter_id=req.voter_id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-success btn-sm">Approve</button>
+              </form>
+              <form method="POST" action="{{ url_for('admin_bp.reject_voter', voter_id=req.voter_id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

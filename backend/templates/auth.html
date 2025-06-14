@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}User Authentication{% endblock %}
+{% block content %}
+<div class="user-card-3d mx-auto" style="max-width:400px;">
+  <h2 class="text-center">User Authentication</h2>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  <form method="POST">
+    <div class="mb-3">
+      <label for="voter_id" class="form-label">Voter ID</label>
+      <input type="text" class="form-control" id="voter_id" name="voter_id" required>
+    </div>
+    <button type="submit" class="btn-user w-100">Authenticate</button>
+  </form>
+</div>
+{% endblock %}

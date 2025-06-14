@@ -1,0 +1,74 @@
+{% extends "base_admin.html" %}
+{% block title %}Manage Candidates{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h3>Manage Candidates</h3>
+
+  <div class="admin-card-3d p-3 mb-4">
+    <h5>Registered Candidates</h5>
+    {% if candidates|length == 0 %}
+      <p>No registered candidates.</p>
+    {% else %}
+    <div style="max-height: 300px; overflow-y: auto;">
+      <table class="table table-striped mt-3">
+        <thead>
+          <tr>
+            <th>Candidate Name</th>
+            <th>Candidate ID</th>
+            <th>Votes</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for candidate in candidates %}
+          <tr>
+            <td>{{ candidate.candidate_name }}</td>
+            <td>{{ candidate.candidate_id }}</td>
+            <td>{{ candidate.votes }}</td>
+            <td>
+              <form method="POST" action="{{ url_for('admin_bp.delete_candidate', candidate_id=candidate.candidate_id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if pending_candidate_requests|length > 0 %}
+  <div class="admin-card-3d p-3">
+    <h5>Pending Candidate Requests</h5>
+    <div style="max-height: 300px; overflow-y: auto;">
+      <table class="table table-striped mt-3">
+        <thead>
+          <tr>
+            <th>Candidate Name</th>
+            <th>Candidate ID</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for req in pending_candidate_requests %}
+          <tr>
+            <td>{{ req.candidate_name }}</td>
+            <td>{{ req.candidate_id }}</td>
+            <td>
+              <form method="POST" action="{{ url_for('admin_bp.approve_candidate_request', candidate_id=req.candidate_id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-success btn-sm">Approve</button>
+              </form>
+              <form method="POST" action="{{ url_for('admin_bp.reject_candidate_request', candidate_id=req.candidate_id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

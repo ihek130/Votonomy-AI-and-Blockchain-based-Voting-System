@@ -1,0 +1,191 @@
+{% extends "base_admin.html" %}
+{% block title %}Manage Complaints{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h3>Voter Complaints Management</h3>
+  
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- Complaints Summary Cards -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card-3d p-3 text-center card-stat">
+        <h6 class="text-muted">Total Complaints</h6>
+        <div class="display-6">{{ complaints|length }}</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card-3d p-3 text-center card-stat">
+        <h6 class="text-muted">Pending</h6>
+        <div class="display-6 text-warning">{{ complaints|selectattr("status", "equalto", "Pending")|list|length }}</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card-3d p-3 text-center card-stat">
+        <h6 class="text-muted">In Progress</h6>
+        <div class="display-6 text-info">{{ complaints|selectattr("status", "equalto", "In Progress")|list|length }}</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card-3d p-3 text-center card-stat">
+        <h6 class="text-muted">Resolved</h6>
+        <div class="display-6 text-success">{{ complaints|selectattr("status", "equalto", "Resolved")|list|length }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Complaints Table -->
+  <div class="admin-card-3d p-3">
+    <h5>All Complaints</h5>
+    {% if complaints|length == 0 %}
+      <div class="text-center py-5">
+        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+        <p class="text-muted">No complaints received yet.</p>
+      </div>
+    {% else %}
+    <div style="max-height: 600px; overflow-y: auto;">
+      <table class="table table-striped mt-3">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Email</th>
+            <th>Complaint</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for complaint in complaints %}
+          <tr>
+            <td>
+              <span class="badge badge-primary">C{{ "%04d"|format(complaint.id) }}</span>
+            </td>
+            <td>{{ complaint.email }}</td>
+            <td>
+              <div style="max-width: 300px;">
+                <div class="text-truncate" title="{{ complaint.complaint_text }}">
+                  {{ complaint.complaint_text[:80] }}{% if complaint.complaint_text|length > 80 %}...{% endif %}
+                </div>
+              </div>
+            </td>
+            <td>
+              {% if complaint.status == 'Pending' %}
+                <span class="badge badge-warning">{{ complaint.status }}</span>
+              {% elif complaint.status == 'In Progress' %}
+                <span class="badge badge-info">{{ complaint.status }}</span>
+              {% elif complaint.status == 'Resolved' %}
+                <span class="badge badge-success">{{ complaint.status }}</span>
+              {% endif %}
+            </td>
+            <td>
+              <small class="text-muted">
+                {{ complaint.created_at.strftime('%d/%m/%Y %H:%M') }}
+              </small>
+            </td>
+            <td>
+              <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#complaintModal{{ complaint.id }}">
+                <i class="fas fa-edit"></i> Manage
+              </button>
+              <form method="POST" action="{{ url_for('admin_bp.delete_complaint', complaint_id=complaint.id) }}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this complaint?')">
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Modals for Managing Complaints -->
+{% for complaint in complaints %}
+<div class="modal fade" id="complaintModal{{ complaint.id }}" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Manage Complaint C{{ "%04d"|format(complaint.id) }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="{{ url_for('admin_bp.update_complaint', complaint_id=complaint.id) }}">
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Voter Email:</strong> {{ complaint.email }}</p>
+              <p><strong>Date Submitted:</strong> {{ complaint.created_at.strftime('%d/%m/%Y at %H:%M') }}</p>
+              <p><strong>Current Status:</strong> 
+                <span class="badge badge-{% if complaint.status == 'Pending' %}warning{% elif complaint.status == 'In Progress' %}info{% else %}success{% endif %}">
+                  {{ complaint.status }}
+                </span>
+              </p>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="status{{ complaint.id }}" class="form-label">Update Status:</label>
+                <select class="form-control" id="status{{ complaint.id }}" name="status" required>
+                  <option value="Pending" {% if complaint.status == 'Pending' %}selected{% endif %}>Pending</option>
+                  <option value="In Progress" {% if complaint.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                  <option value="Resolved" {% if complaint.status == 'Resolved' %}selected{% endif %}>Resolved</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label"><strong>Complaint Details:</strong></label>
+            <div class="p-3 bg-light border rounded">
+              {{ complaint.complaint_text }}
+            </div>
+          </div>
+
+          {% if complaint.response %}
+          <div class="mb-3">
+            <label class="form-label"><strong>Previous Admin Response:</strong></label>
+            <div class="p-3 bg-info bg-opacity-10 border border-info rounded">
+              {{ complaint.response }}
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="mb-3">
+            <label for="response{{ complaint.id }}" class="form-label">Admin Response:</label>
+            <textarea class="form-control" id="response{{ complaint.id }}" name="response" rows="4" 
+                      placeholder="Write your response to the voter (will be sent via email when resolved)">{{ complaint.response or '' }}</textarea>
+            <small class="form-text text-muted">
+              💡 This response will be sent to the voter's email when you mark the complaint as "Resolved"
+            </small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update Complaint</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<script>
+// Auto-dismiss alerts after 5 seconds
+setTimeout(() => {
+  document.querySelectorAll('.alert').forEach(el => {
+    el.classList.remove('show');
+  });
+}, 5000);
+</script>
+{% endblock %}

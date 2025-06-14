@@ -1,0 +1,52 @@
+{% extends "base_admin.html" %}
+{% block title %}Voter Requests{% endblock %}
+{% block content %}
+<div class="container-fluid mt-4">
+  <h3>Voter Registration Requests</h3>
+  {% if requests|length == 0 %}
+    <p>No pending requests.</p>
+  {% else %}
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>ID Card</th>
+            <th>Age</th>
+            <th>Province</th>
+            <th>City</th>
+            <th>Town</th>
+            <th>Phone</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for req in requests %}
+          <tr>
+            <td>{{ req.name }}</td>
+            <td>{{ req.id_card }}</td>
+            <td>{{ req.age }}</td>
+            <td>{{ req.province }}</td>
+            <td>{{ req.city }}</td>
+            <td>{{ req.town or "N/A" }}</td>
+            <td>{{ req.phone }}</td>
+            <td>
+              <form method="POST" action="{{ url_for('admin_bp.approve_request', voter_id=req.voter_id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-success btn-sm">
+                  <i class="fa-solid fa-check"></i>
+                </button>
+              </form>
+              <form method="POST" action="{{ url_for('admin_bp.reject_request', voter_id=req.voter_id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-danger btn-sm">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

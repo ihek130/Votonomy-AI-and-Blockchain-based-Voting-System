@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Vote Confirmation{% endblock %}
+{% block content %}
+<div class="user-card-3d mx-auto" style="max-width:500px;">
+  <h2 class="text-center">Thank You, {{ session.name }}!</h2>
+  {% if user_vote %}
+    <p class="text-center">Your vote for <strong>{{ user_vote.candidate }}</strong> has been recorded.</p>
+    <!-- Animated Check Icon to represent successful vote -->
+    <div class="text-center my-3">
+      <i class="fa-solid fa-check-circle animate__animated animate__bounceIn" style="font-size:48px; color:#00FA9A;"></i>
+    </div>
+  {% else %}
+    <p class="text-center">We couldn't find your vote. Please try again.</p>
+  {% endif %}
+  <div class="text-center mt-3">
+    <a href="{{ url_for('index') }}" class="btn-user">Return to Home</a>
+  </div>
+</div>
+{% endblock %}

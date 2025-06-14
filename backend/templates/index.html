@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Votonomy - Home{% endblock %}
+{% block content %}
+<div class="text-center">
+  <div class="user-card-3d mx-auto" style="max-width:500px;">
+    <h1 class="display-4">Welcome to Votonomy</h1>
+    <p class="lead">Cast your vote securely and transparently.</p>
+    <a href="{{ url_for('authenticate') }}" class="btn-user">Get Started</a>
+  </div>
+</div>
+{% endblock %}

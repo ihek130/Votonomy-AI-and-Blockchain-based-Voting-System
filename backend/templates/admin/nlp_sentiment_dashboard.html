@@ -1,0 +1,538 @@
+{% extends "base_admin.html" %}
+{% block title %}Advanced Sentiment Analysis{% endblock %}
+
+{% block head %}
+{{ super() }}
+<!-- ✅ SIMPLE SCROLLING FIX -->
+<style>
+/* SIMPLE FIX - Only body can scroll */
+html, body {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    height: auto !important;
+}
+
+/* Kill scrollbars on EVERYTHING else */
+* {
+    overflow-x: hidden !important;
+}
+
+*:not(body):not(html) {
+    overflow-y: visible !important;
+}
+
+/* Force single scrollbar */
+body {
+    overflow-y: scroll !important;
+}
+
+/* Hide all scrollbars except body */
+*:not(body)::-webkit-scrollbar {
+    display: none !important;
+}
+
+.scroll-to-top {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #01411C;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    cursor: pointer;
+    z-index: 9999;
+    display: none;
+    font-size: 18px;
+}
+
+.scroll-to-top:hover {
+    background-color: #28a745;
+}
+
+.scroll-to-top.show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.scroll-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    background: linear-gradient(90deg, #01411C, #28a745);
+    z-index: 9999;
+}
+
+.dashboard-container {
+    min-height: 100vh;
+    padding-bottom: 50px;
+}
+</style>
+
+<!-- ✅ FORCE SCROLL JAVASCRIPT -->
+<script>
+// Immediately force scrolling
+document.documentElement.style.setProperty('overflow-y', 'auto', 'important');
+document.documentElement.style.setProperty('height', 'auto', 'important');
+</script>
+{% endblock %}
+
+{% block content %}
+<!-- ✅ Scroll progress bar -->
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<!-- ✅ Main container with forced height -->
+<div class="dashboard-container">
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12">
+      <h2 class="mb-4">
+        <i class="fas fa-brain me-2 text-primary"></i>
+        Advanced Sentiment Analysis Dashboard
+      </h2>
+    </div>
+  </div>
+
+  {% if analytics %}
+  <!-- Overall Statistics Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card-3d p-3 text-center">
+        <i class="fas fa-comments fa-2x text-primary mb-2"></i>
+        <h6 class="text-muted">Total Responses</h6>
+        <div class="display-6 fw-bold" id="total-responses">{{ analytics.total_responses }}</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card-3d p-3 text-center">
+        <i class="fas fa-smile fa-2x text-success mb-2"></i>
+        <h6 class="text-muted">Positive Sentiment</h6>
+        <div class="display-6 fw-bold text-success">{{ "%.1f"|format(analytics.positive_percentage) }}%</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card-3d p-3 text-center">
+        <i class="fas fa-frown fa-2x text-danger mb-2"></i>
+        <h6 class="text-muted">Negative Sentiment</h6>
+        <div class="display-6 fw-bold text-danger">{{ "%.1f"|format(analytics.negative_percentage) }}%</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card-3d p-3 text-center">
+        <i class="fas fa-thermometer-half fa-2x text-info mb-2"></i>
+        <h6 class="text-muted">Avg. Sentiment</h6>
+        <div class="display-6 fw-bold text-info">{{ "%.2f"|format(analytics.average_sentiment_score) }}</div>
+        <small class="text-muted">(-1 to +1 scale)</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="row g-4 mb-4">
+    <!-- Overall Sentiment Distribution -->
+    <div class="col-md-6">
+      <div class="card-3d p-4">
+        <h5 class="mb-3">
+          <i class="fas fa-chart-pie me-2"></i>
+          Overall Sentiment Distribution
+        </h5>
+        <div style="position: relative; height: 300px;">
+          <canvas id="sentimentPieChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Topic-wise Sentiment -->
+    <div class="col-md-6">
+      <div class="card-3d p-4">
+        <h5 class="mb-3">
+          <i class="fas fa-chart-bar me-2"></i>
+          Topic-wise Sentiment Scores
+        </h5>
+        <div style="position: relative; height: 300px;">
+          <canvas id="topicSentimentChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Emotion Analysis & Keywords Row -->
+  <div class="row g-4 mb-4">
+    <!-- Emotion Distribution -->
+    <div class="col-md-6">
+      <div class="card-3d p-4">
+        <h5 class="mb-3">
+          <i class="fas fa-heart me-2"></i>
+          Emotion Analysis
+        </h5>
+        <div style="position: relative; height: 300px;">
+          <canvas id="emotionChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trending Keywords -->
+    <div class="col-md-6">
+      <div class="card-3d p-4">
+        <h5 class="mb-3">
+          <i class="fas fa-tags me-2"></i>
+          Trending Keywords
+        </h5>
+        <div id="keywordCloud" style="height: 300px; overflow-y: auto;">
+          {% if analytics.trending_keywords %}
+            {% for keyword, count in analytics.trending_keywords.items() %}
+              {% if loop.index <= 15 %}
+                <span class="badge bg-primary me-2 mb-2" data-count="{{ count }}">
+                  {{ keyword }} ({{ count }})
+                </span>
+              {% endif %}
+            {% endfor %}
+          {% else %}
+            <p class="text-muted">No keywords extracted yet.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Geographic Sentiment Analysis -->
+  {% if analytics.halka_sentiments %}
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card-3d p-4">
+        <h5 class="mb-3">
+          <i class="fas fa-map-marker-alt me-2"></i>
+          Geographic Sentiment Analysis (by Halka)
+        </h5>
+        <div class="row">
+          {% for halka, data in analytics.halka_sentiments.items() %}
+          <div class="col-md-4 mb-3">
+            <div class="p-3 border rounded">
+              <h6 class="fw-bold">{{ halka }}</h6>
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="badge 
+                  {% if data.sentiment_label == 'Positive' %}bg-success
+                  {% elif data.sentiment_label == 'Negative' %}bg-danger
+                  {% else %}bg-secondary{% endif %}">
+                  {{ data.sentiment_label }}
+                </span>
+                <span class="text-muted">{{ data.count }} responses</span>
+              </div>
+              <div class="progress mt-2" style="height: 8px;">
+                <div class="progress-bar 
+                  {% if data.sentiment_label == 'Positive' %}bg-success
+                  {% elif data.sentiment_label == 'Negative' %}bg-danger
+                  {% else %}bg-secondary{% endif %}" 
+                  data-width="{{ ((data.average_score + 1) / 2 * 100)|round }}"></div>
+              </div>
+              <small class="text-muted">Score: {{ "%.2f"|format(data.average_score) }}</small>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Topic-wise Detailed Analysis -->
+  {% if analytics.topic_sentiments %}
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card-3d p-4">
+        <h5 class="mb-3">
+          <i class="fas fa-list-alt me-2"></i>
+          Detailed Topic Analysis
+        </h5>
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-dark">
+              <tr>
+                <th>Topic</th>
+                <th>Avg. Score</th>
+                <th>Positive</th>
+                <th>Negative</th>
+                <th>Neutral</th>
+                <th>Total Responses</th>
+                <th>Sentiment</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for topic, data in analytics.topic_sentiments.items() %}
+              <tr>
+                <td class="fw-bold">{{ topic }}</td>
+                <td>
+                  <span class="badge 
+                    {% if data.average_score > 0.1 %}bg-success
+                    {% elif data.average_score < -0.1 %}bg-danger
+                    {% else %}bg-secondary{% endif %}">
+                    {{ "%.2f"|format(data.average_score) }}
+                  </span>
+                </td>
+                <td>
+                  <span class="text-success">{{ data.positive_count }}</span>
+                </td>
+                <td>
+                  <span class="text-danger">{{ data.negative_count }}</span>
+                </td>
+                <td>
+                  <span class="text-muted">{{ data.neutral_count }}</span>
+                </td>
+                <td>{{ data.total_responses }}</td>
+                <td>
+                  {% if data.total_responses > 0 %}
+                  <div class="progress" style="height: 20px;">
+                    <div class="progress-bar bg-success" data-width="{{ (data.positive_count / data.total_responses * 100)|round }}"></div>
+                    <div class="progress-bar bg-danger" data-width="{{ (data.negative_count / data.total_responses * 100)|round }}"></div>
+                    <div class="progress-bar bg-secondary" data-width="{{ (data.neutral_count / data.total_responses * 100)|round }}"></div>
+                  </div>
+                  {% else %}
+                  <span class="text-muted">No responses</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Action Buttons -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card-3d p-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+          <div class="mb-2 mb-md-0">
+            <small class="text-muted">
+              <i class="fas fa-clock me-1"></i>
+              Last updated: {{ analytics.last_updated.strftime('%B %d, %Y at %I:%M %p') }}
+            </small>
+          </div>
+          <div>
+            <button onclick="refreshQualityMetrics()" class="btn btn-outline-info btn-sm me-2 mb-1">
+              <i class="fas fa-sync-alt me-1"></i>Refresh Data
+            </button>
+            <button onclick="exportSentimentData()" class="btn btn-outline-success btn-sm me-2 mb-1">
+              <i class="fas fa-download me-1"></i>Export Data
+            </button>
+            <button onclick="window.print()" class="btn btn-outline-secondary btn-sm me-2 mb-1">
+              <i class="fas fa-print me-1"></i>Print Report
+            </button>
+            <button onclick="scrollToTop()" class="btn btn-outline-primary btn-sm me-2 mb-1">
+              <i class="fas fa-arrow-up me-1"></i>Top
+            </button>
+            <a href="{{ url_for('admin_bp.admin_dashboard') }}" class="btn btn-outline-primary btn-sm mb-1">
+              <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+  <!-- No Data Available -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card-3d p-5 text-center">
+        <i class="fas fa-chart-line fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted">No Sentiment Data Available</h4>
+        <p class="text-muted">
+          Sentiment analysis will appear here once voters start completing the pre-election survey.
+        </p>
+        <a href="{{ url_for('admin_bp.admin_dashboard') }}" class="btn btn-primary">
+          <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+</div>
+
+<!-- ✅ Scroll to top button -->
+<button class="scroll-to-top" id="scrollToTopBtn" title="Scroll to top">
+  <i class="fas fa-chevron-up"></i>
+</button>
+
+<!-- ✅ FIXED: Hidden Analytics Data for JavaScript -->
+{% if analytics %}
+<script type="application/json" id="analytics-data">
+{
+  "positive_percentage": {{ analytics.positive_percentage|round(1) }},
+  "negative_percentage": {{ analytics.negative_percentage|round(1) }},
+  "neutral_percentage": {{ analytics.neutral_percentage|round(1) }},
+  "topic_sentiments": {
+    {% for topic, data in analytics.topic_sentiments.items() %}
+    "{{ topic }}": {{ data.average_score|round(2) }}{% if not loop.last %},{% endif %}
+    {% endfor %}
+  },
+  "emotion_distribution": {{ analytics.emotion_distribution|tojson if analytics.emotion_distribution else '{}' }}
+}
+</script>
+{% endif %}
+
+<!-- ✅ FIXED: Chart.js CDN with error handling -->
+<script>
+// Load Chart.js with fallback
+(function loadChartJS() {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js';
+    
+    script.onload = function() {
+        console.log('✅ Chart.js loaded successfully');
+    };
+    
+    script.onerror = function() {
+        console.warn('❌ Primary CDN failed, trying backup...');
+        const backupScript = document.createElement('script');
+        backupScript.src = 'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js';
+        
+        backupScript.onload = function() {
+            console.log('✅ Chart.js loaded from backup CDN');
+        };
+        
+        backupScript.onerror = function() {
+            console.error('❌ All Chart.js CDNs failed to load');
+            const chartContainers = document.querySelectorAll('[id*="Chart"]');
+            chartContainers.forEach(container => {
+                if (container) {
+                    container.innerHTML = `
+                        <div class="text-center p-4">
+                            <i class="fas fa-exclamation-triangle fa-2x text-warning mb-2"></i>
+                            <p class="text-muted">Charts could not be loaded. Please check your internet connection.</p>
+                        </div>
+                    `;
+                }
+            });
+        };
+        
+        document.head.appendChild(backupScript);
+    };
+    
+    document.head.appendChild(script);
+})();
+</script>
+
+<!-- ✅ SCROLL FUNCTIONALITY -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Initializing scroll functionality...');
+    
+    // Force scrolling on body and html
+    document.body.style.setProperty('overflow-y', 'auto', 'important');
+    document.body.style.setProperty('height', 'auto', 'important');
+    document.documentElement.style.setProperty('overflow-y', 'auto', 'important');
+    
+    // Get elements
+    const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+    const scrollProgress = document.getElementById('scrollProgress');
+    
+    // Show/hide scroll button and update progress
+    window.addEventListener('scroll', function() {
+        const scrollTop = window.pageYOffset;
+        const docHeight = document.body.scrollHeight;
+        const winHeight = window.innerHeight;
+        
+        // Show/hide scroll to top button
+        if (scrollTop > 300) {
+            scrollToTopBtn.classList.add('show');
+        } else {
+            scrollToTopBtn.classList.remove('show');
+        }
+        
+        // Update progress bar
+        if (docHeight > winHeight) {
+            const scrollPercent = scrollTop / (docHeight - winHeight);
+            scrollProgress.style.width = Math.min(scrollPercent * 100, 100) + '%';
+        }
+    });
+    
+    // Scroll to top functionality
+    scrollToTopBtn.addEventListener('click', function() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+    
+    // Global scroll function
+    window.scrollToTop = function() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    };
+    
+    console.log('✅ Scroll functionality ready');
+});
+</script>
+
+<!-- ✅ YOUR EXTERNAL ADMIN DASHBOARD JAVASCRIPT -->
+<script src="{{ url_for('static', filename='js/admin_dashboard.js') }}"></script>
+
+<!-- ✅ FINAL OVERRIDE - KILL DUAL SCROLLBARS -->
+<style>
+/* FINAL OVERRIDE - Load this LAST to override everything */
+* {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+*::-webkit-scrollbar {
+    display: none !important;
+    width: 0px !important;
+    height: 0px !important;
+    background: transparent !important;
+}
+
+/* ONLY body gets scrollbar */
+body {
+    overflow-y: scroll !important;
+    scrollbar-width: auto !important;
+    -ms-overflow-style: auto !important;
+}
+
+body::-webkit-scrollbar {
+    display: block !important;
+    width: initial !important;
+    height: initial !important;
+}
+
+/* Kill any sidebar scrollbars */
+.sidebar, .admin-sidebar, .side-nav, .navigation {
+    overflow: hidden !important;
+}
+
+/* Kill main content scrollbars */
+.main-content, .content-wrapper, .wrapper {
+    overflow: visible !important;
+}
+</style>
+
+<script>
+// FINAL JAVASCRIPT OVERRIDE
+setTimeout(() => {
+    // Remove all custom scrollbars created by JS
+    document.querySelectorAll('*').forEach(el => {
+        if (el !== document.body && el !== document.documentElement) {
+            el.style.setProperty('overflow-x', 'hidden', 'important');
+            el.style.setProperty('overflow-y', 'visible', 'important');
+        }
+    });
+    
+    // Force only body to scroll
+    document.body.style.setProperty('overflow-y', 'scroll', 'important');
+    
+    console.log('Final scrollbar fix applied');
+}, 1000);
+</script>
+
+{% endblock %}

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Cast Your Vote{% endblock %}
+{% block content %}
+
+<!-- ✅ CSS that forces the summary to always be visible -->
+<style>
+  #confirmationBox {
+    display: block !important;
+  }
+</style>
+
+<div class="user-card-3d mx-auto" style="max-width:700px;">
+  <h2 class="text-center mb-4">Cast Your Vote</h2>
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <form method="POST" id="voteForm">
+    <!-- 🔒 Halka is shown as non-editable based on voter's session -->
+    <div class="mb-4">
+      <label class="form-label">Your Halka:</label>
+      <input type="text" class="form-control" value="{{ halkas[0] }}" readonly disabled>
+      <input type="hidden" id="halkaDropdown" name="halka" value="{{ halkas[0] }}">
+    </div>
+
+    <div id="positionDropdowns" style="display:none;">
+      {% for position in positions %}
+      <div class="mb-3">
+        <label class="form-label">Select {{ position }}:</label>
+        <select class="form-control position-dropdown" name="votes[{{ position }}]" data-position="{{ position }}" disabled>
+          <option disabled selected>Choose {{ position }}</option>
+        </select>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Confirmation Summary -->
+    <div id="confirmationBox" class="alert alert-info mt-4">
+      <strong>You selected:</strong>
+      <ul id="summaryList" style="margin:0; padding-left: 20px;"></ul>
+    </div>
+
+    <button type="submit" id="submitBtn" class="btn-user w-100 mt-3" disabled>Submit Vote</button>
+  </form>
+</div>
+
+<!-- ✅ FINAL SCRIPT -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const allCandidates = JSON.parse('{{ candidates | tojson | safe }}');
+  const halkaDropdown = document.getElementById("halkaDropdown");
+  const form = document.getElementById("voteForm");
+  const positionDropdownsContainer = document.getElementById("positionDropdowns");
+  const positionDropdowns = document.querySelectorAll(".position-dropdown");
+  const submitBtn = document.getElementById("submitBtn");
+  const summaryList = document.getElementById("summaryList");
+
+  function updateSummary() {
+    summaryList.innerHTML = "";
+    let allSelected = true;
+
+    positionDropdowns.forEach(dropdown => {
+      const position = dropdown.getAttribute("data-position");
+      const selectedOption = dropdown.options[dropdown.selectedIndex];
+      if (dropdown.value && selectedOption) {
+        const li = document.createElement("li");
+        li.textContent = `${position}: ${selectedOption.text}`;
+        summaryList.appendChild(li);
+      } else {
+        allSelected = false;
+      }
+    });
+
+    submitBtn.disabled = !allSelected;
+  }
+
+  // ✅ Auto-populate dropdowns based on voter's Halka
+  const selectedHalka = halkaDropdown.value;
+  positionDropdownsContainer.style.display = 'block';
+
+  positionDropdowns.forEach(dropdown => {
+    const position = dropdown.getAttribute("data-position");
+    dropdown.innerHTML = `<option disabled selected>Choose ${position}</option>`;
+    dropdown.disabled = false;
+
+    const filtered = allCandidates.filter(c =>
+      c.halka === selectedHalka && c.position === position
+    );
+
+    filtered.forEach(c => {
+      const option = document.createElement("option");
+      option.value = c.id;
+      option.textContent = c.name;
+      dropdown.appendChild(option);
+    });
+
+    dropdown.addEventListener("change", updateSummary);
+  });
+
+  updateSummary();
+
+  form.addEventListener("submit", function (e) {
+    let valid = true;
+    positionDropdowns.forEach(dropdown => {
+      if (!dropdown.value) {
+        valid = false;
+      }
+    });
+
+    if (!valid) {
+      e.preventDefault();
+      alert("⚠️ Please select candidates for all positions before submitting your vote.");
+    }
+  });
+});
+</script>
+{% endblock %}
