@@ -9,10 +9,10 @@ import re
 
 chatbot_bp = Blueprint('chatbot', __name__)
 
-# === OpenRouter GPT-4o (Valid Model)
-OPENROUTER_API_KEY = "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"
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-QWEN_MODEL = "openai/gpt-4o"
+# === Groq API (FREE & FAST)
+GROQ_API_KEY = "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"
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODEL = "llama-3.1-8b-instant"  # Fast and efficient model
 
 # Enhanced FAQ for Votonomy-specific questions
 faq_questions = [
@@ -235,21 +235,21 @@ def is_question_relevant(question):
     
     return False
 
-# ✅ GPT Call with enhanced error handling
+# ✅ Groq API Call with enhanced error handling
 def call_qwen_model(messages, max_tokens=800):
     headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Authorization": f"Bearer {GROQ_API_KEY}",
         "Content-Type": "application/json"
     }
     payload = {
-        "model": QWEN_MODEL,
+        "model": GROQ_MODEL,
         "messages": messages,
         "max_tokens": max_tokens,
         "temperature": 0.3
     }
 
     try:
-        response = requests.post(OPENROUTER_API_URL, headers=headers, json=payload, timeout=30)
+        response = requests.post(GROQ_API_URL, headers=headers, json=payload, timeout=30)
         data = response.json()
         if "choices" in data:
             return data["choices"][0]["message"]["content"]
@@ -258,11 +258,11 @@ def call_qwen_model(messages, max_tokens=800):
                 print("🔁 Retrying with shorter history...")
                 trimmed = messages[:2] + messages[-2:]
                 payload["messages"] = trimmed
-                response = requests.post(OPENROUTER_API_URL, headers=headers, json=payload, timeout=30)
+                response = requests.post(GROQ_API_URL, headers=headers, json=payload, timeout=30)
                 data = response.json()
                 if "choices" in data:
                     return data["choices"][0]["message"]["content"]
-            print("⚠️ OpenRouter API error:", data)
+            print("⚠️ Groq API error:", data)
             return "⚠️ Sorry, I couldn't respond at the moment. Please ask about Votonomy voting or Pakistan-related topics."
     except requests.exceptions.Timeout:
         return "⚠️ Response timed out. Please try again with a shorter question about Votonomy or Pakistan."

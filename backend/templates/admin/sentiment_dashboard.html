@@ -1,0 +1,230 @@
+{% extends "base_admin.html" %}
+{% block title %}Sentiment Analysis{% endblock %}
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<div class="sentiment-dashboard-wrapper">
+    <!-- Header -->
+    <div class="sentiment-header-new">
+        <h3>Sentiment Analysis Dashboard</h3>
+        <div class="header-actions">
+            <form method="POST" action="{{ url_for('admin_bp.refresh_analytics') }}" style="display: inline;">
+                <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-sync-alt"></i> Refresh Analytics</button>
+            </form>
+        </div>
+    </div>
+
+    {% if analytics and analytics.total_responses > 0 %}
+    
+    <!-- Stats Row -->
+    <div class="stats-grid">
+        <div class="stat-card positive">
+            <i class="fas fa-smile"></i>
+            <div class="stat-content">
+                <div class="stat-value">{{ analytics.positive_percentage }}%</div>
+                <div class="stat-label">Positive</div>
+            </div>
+        </div>
+        <div class="stat-card negative">
+            <i class="fas fa-frown"></i>
+            <div class="stat-content">
+                <div class="stat-value">{{ analytics.negative_percentage }}%</div>
+                <div class="stat-label">Negative</div>
+            </div>
+        </div>
+        <div class="stat-card neutral">
+            <i class="fas fa-meh"></i>
+            <div class="stat-content">
+                <div class="stat-value">{{ analytics.neutral_percentage }}%</div>
+                <div class="stat-label">Neutral</div>
+            </div>
+        </div>
+        <div class="stat-card info">
+            <i class="fas fa-users"></i>
+            <div class="stat-content">
+                <div class="stat-value">{{ total_surveys }}</div>
+                <div class="stat-label">Total Responses</div>
+            </div>
+        </div>
+        <div class="stat-card participation">
+            <i class="fas fa-percentage"></i>
+            <div class="stat-content">
+                <div class="stat-value">{{ participation_rate }}%</div>
+                <div class="stat-label">Participation Rate</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content - 2 Rows -->
+    <div class="content-row-1">
+        <!-- Overall Distribution Chart -->
+        <div class="chart-card">
+            <div class="card-header">
+                <h6><i class="fas fa-chart-pie"></i> Overall Distribution</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="overallChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Topic Breakdown with SCROLLBAR -->
+        <div class="chart-card">
+            <div class="card-header">
+                <h6><i class="fas fa-list-alt"></i> Topic Breakdown</h6>
+            </div>
+            <div class="card-body-scroll">
+                <div class="scrollable-content">
+                    {% for topic, data in analytics.topic_sentiments.items() %}
+                    <div class="topic-item">
+                        <div class="topic-header">
+                            <strong>{{ topic }}</strong>
+                            <span class="badge badge-{{ 'success' if data.average_score > 0.2 else 'danger' if data.average_score < -0.2 else 'warning' }}">
+                                {% if data.average_score > 0.2 %}Positive{% elif data.average_score < -0.2 %}Negative{% else %}Neutral{% endif %}
+                            </span>
+                        </div>
+                        <div class="topic-progress">
+                            <div class="progress-segment positive" style="width: {{ (data.positive_count / data.total_responses * 100) }}%"></div>
+                            <div class="progress-segment neutral" style="width: {{ (data.neutral_count / data.total_responses * 100) }}%"></div>
+                            <div class="progress-segment negative" style="width: {{ (data.negative_count / data.total_responses * 100) }}%"></div>
+                        </div>
+                        <div class="topic-stats">
+                            <span class="stat-positive">✓ {{ data.positive_count }}</span>
+                            <span class="stat-neutral">― {{ data.neutral_count }}</span>
+                            <span class="stat-negative">✗ {{ data.negative_count }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Halka Distribution with SCROLLBAR -->
+        <div class="chart-card">
+            <div class="card-header">
+                <h6><i class="fas fa-map-marked-alt"></i> Geographic Distribution (By Halka)</h6>
+            </div>
+            <div class="card-body-scroll">
+                <div class="scrollable-content">
+                    {% if analytics.halka_sentiments %}
+                        {% for halka, data in analytics.halka_sentiments.items() %}
+                        <div class="halka-item">
+                            <div class="halka-info">
+                                <strong>{{ halka }}</strong>
+                                <span class="halka-count">{{ data.count }} responses</span>
+                            </div>
+                            <span class="badge badge-{{ 'success' if data.sentiment_label == 'Positive' else 'danger' if data.sentiment_label == 'Negative' else 'warning' }}">
+                                {{ data.sentiment_label }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No halka data available</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- No Data -->
+    <div class="no-data">
+        <i class="fas fa-inbox"></i>
+        <h3>No Survey Data Available</h3>
+        <p>Survey responses will appear here once voters complete the survey.</p>
+    </div>
+    {% endif %}
+</div>
+
+{% if analytics and analytics.total_responses > 0 %}
+<script>
+const data = {
+    positive: {{ analytics.positive_percentage }},
+    negative: {{ analytics.negative_percentage }},
+    neutral: {{ analytics.neutral_percentage }},
+    topics: {{ analytics.topic_sentiments | tojson | safe }},
+    halkas: {{ analytics.halka_sentiments | tojson | safe }}
+};
+
+// Overall Pie Chart
+new Chart(document.getElementById('overallChart'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Positive', 'Negative', 'Neutral'],
+        datasets: [{
+            data: [data.positive, data.negative, data.neutral],
+            backgroundColor: ['#28a745', '#dc3545', '#ffc107'],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        aspectRatio: 1.5,
+        layout: {
+            padding: {
+                top: 10,
+                bottom: 10,
+                left: 10,
+                right: 10
+            }
+        },
+        plugins: {
+            legend: { 
+                position: 'bottom',
+                labels: {
+                    padding: 15,
+                    font: { size: 12 }
+                }
+            }
+        }
+    }
+});
+
+// Topic Bar Chart
+const topics = Object.keys(data.topics);
+new Chart(document.getElementById('topicChart'), {
+    type: 'bar',
+    data: {
+        labels: topics,
+        datasets: [
+            { label: 'Positive', data: topics.map(t => data.topics[t].positive_count), backgroundColor: '#28a745' },
+            { label: 'Neutral', data: topics.map(t => data.topics[t].neutral_count), backgroundColor: '#ffc107' },
+            { label: 'Negative', data: topics.map(t => data.topics[t].negative_count), backgroundColor: '#dc3545' }
+        ]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            x: { stacked: true },
+            y: { stacked: true, beginAtZero: true }
+        }
+    }
+});
+
+{% if analytics.halka_sentiments %}
+// Halka Radar Chart
+const halkas = Object.keys(data.halkas);
+new Chart(document.getElementById('halkaChart'), {
+    type: 'radar',
+    data: {
+        labels: halkas,
+        datasets: [{
+            label: 'Sentiment Score',
+            data: halkas.map(h => data.halkas[h].average_score),
+            backgroundColor: 'rgba(1, 65, 28, 0.2)',
+            borderColor: '#01411C',
+            pointBackgroundColor: '#01411C'
+        }]
+    },
+    options: {
+        scales: {
+            r: { min: -1, max: 1 }
+        }
+    }
+});
+{% endif %}
+</script>
+{% endif %}
+
+{% endblock %}

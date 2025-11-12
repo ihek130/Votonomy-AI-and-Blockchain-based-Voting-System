@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Individual Survey Responses - Votonomy</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #01411C;
+            --secondary-color: #0F5132;
+            --positive-color: #28a745;
+            --negative-color: #dc3545;
+            --neutral-color: #ffc107;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            margin-top: 30px;
+        }
+
+        .content-card h2 {
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .table-responsive {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        }
+
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table thead {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+
+        .table thead th {
+            border: none;
+            padding: 15px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        .table tbody tr {
+            transition: all 0.3s ease;
+        }
+
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
+            transform: scale(1.01);
+        }
+
+        .table tbody td {
+            padding: 15px;
+            vertical-align: middle;
+            font-size: 0.9rem;
+        }
+
+        .response-badge {
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-block;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        .response-positive {
+            background-color: #d4edda;
+            color: var(--positive-color);
+        }
+
+        .response-negative {
+            background-color: #f8d7da;
+            color: var(--negative-color);
+        }
+
+        .response-neutral {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .sentiment-badge {
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .sentiment-positive {
+            background: var(--positive-color);
+            color: white;
+        }
+
+        .sentiment-negative {
+            background: var(--negative-color);
+            color: white;
+        }
+
+        .sentiment-neutral {
+            background: var(--neutral-color);
+            color: #856404;
+        }
+
+        .pagination {
+            margin-top: 20px;
+        }
+
+        .pagination .page-link {
+            color: var(--primary-color);
+            border-color: #dee2e6;
+        }
+
+        .pagination .page-item.active .page-link {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-color: var(--primary-color);
+        }
+
+        .filter-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn-back {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-back:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(1, 65, 28, 0.3);
+            color: white;
+        }
+
+        .question-tooltip {
+            cursor: help;
+            color: #6c757d;
+        }
+
+        @media (max-width: 768px) {
+            .table {
+                font-size: 0.8rem;
+            }
+
+            .content-card {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('admin_bp.admin_dashboard') }}">
+                <i class="fas fa-chart-line"></i> Votonomy Admin
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_bp.admin_dashboard') }}">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_bp.sentiment_analysis') }}">
+                            <i class="fas fa-poll"></i> Sentiment Analysis
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_bp.admin_logout') }}">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4">
+        <div class="content-card">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-list-alt"></i> Individual Survey Responses</h2>
+                    <p class="text-muted mb-0">Detailed view of all voter survey submissions</p>
+                </div>
+                <a href="{{ url_for('admin_bp.sentiment_analysis') }}" class="btn-back">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <p class="mb-0"><strong>Total Responses:</strong> {{ pagination.total }} | 
+                        <strong>Page:</strong> {{ pagination.page }} of {{ pagination.pages }}</p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <button class="btn btn-sm btn-outline-primary" onclick="window.print()">
+                            <i class="fas fa-print"></i> Print
+                        </button>
+                        <button class="btn btn-sm btn-outline-success" onclick="exportToCSV()">
+                            <i class="fas fa-download"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Legend -->
+            <div class="alert alert-info">
+                <strong><i class="fas fa-info-circle"></i> Response Key:</strong>
+                <span class="response-badge response-positive ms-2">😊 Positive (+1)</span>
+                <span class="response-badge response-neutral ms-2">😐 Neutral (0)</span>
+                <span class="response-badge response-negative ms-2">😞 Negative (-1)</span>
+            </div>
+
+            <!-- Table -->
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Voter ID</th>
+                            <th>Halka</th>
+                            <th class="question-tooltip" title="Economy Satisfaction">Econ 1</th>
+                            <th class="question-tooltip" title="Economy Inflation Impact">Econ 2</th>
+                            <th class="question-tooltip" title="Government Performance">Gov 1</th>
+                            <th class="question-tooltip" title="Government Trust">Gov 2</th>
+                            <th class="question-tooltip" title="Security Satisfaction">Sec 1</th>
+                            <th class="question-tooltip" title="Safety Feeling">Sec 2</th>
+                            <th class="question-tooltip" title="Education Quality">Edu 1</th>
+                            <th class="question-tooltip" title="Healthcare Quality">Health 1</th>
+                            <th class="question-tooltip" title="Infrastructure Satisfaction">Infra 1</th>
+                            <th class="question-tooltip" title="Infrastructure Impact">Infra 2</th>
+                            <th class="question-tooltip" title="Future Optimism">Future 1</th>
+                            <th class="question-tooltip" title="Candidate Improvement">Future 2</th>
+                            <th>Overall Sentiment</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if surveys %}
+                        {% for survey in surveys %}
+                        <tr>
+                            <td>{{ loop.index + (pagination.page - 1) * 20 }}</td>
+                            <td><strong>{{ survey.voter.voter_id if survey.voter else 'N/A' }}</strong></td>
+                            <td>{{ survey.voter.halka if survey.voter else 'N/A' }}</td>
+                            
+                            <!-- Economy -->
+                            <td>
+                                {% if survey.economy_satisfaction == 1 %}
+                                <span class="response-badge response-positive">😊</span>
+                                {% elif survey.economy_satisfaction == 0 %}
+                                <span class="response-badge response-neutral">😐</span>
+                                {% else %}
+                                <span class="response-badge response-negative">😞</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if survey.economy_inflation_impact == 1 %}
+                                <span class="response-badge response-positive">😊</span>
+                                {% elif survey.economy_inflation_impact == 0 %}
+                                <span class="response-badge response-neutral">😐</span>
+                                {% else %}
+                                <span class="response-badge response-negative">😞</span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Government -->
+                            <td>
+                                {% if survey.government_performance == 1 %}
+                                <span class="response-badge response-positive">😊</span>
+                                {% elif survey.government_performance == 0 %}
+                                <span class="response-badge response-neutral">😐</span>
+                                {% else %}
+                                <span class="response-badge response-negative">😞</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if survey.government_trust == 1 %}
+                                <span class="response-badge response-positive">😊</span>
+                                {% elif survey.government_trust == 0 %}
+                                <span class="response-badge response-neutral">😐</span>
+                                {% else %}
+                                <span class="response-badge response-negative">😞</span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Security -->
+                            <td>
+                                {% if survey.security_satisfaction == 1 %}
+                                <span class="response-badge response-positive">😊</span>
+                                {% elif survey.security_satisfaction == 0 %}
+                                <span class="response-badge response-neutral">😐</span>
+                                {% else %}
+                                <span class="response-badge response-negative">😞</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if survey.safety_feeling == 1 %}
+                                <span class="response-badge response-positive">😊</span>
+                                {% elif survey.safety_feeling == 0 %}
+                                <span class="response-badge response-neutral">😐</span>
+                                {% else %}
+                                <span class="response-badge response-negative">😞</span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Education & Healthcare -->
+                            <td>
+                                {% if survey.education_quality == 1 %}
+                                <span class="response-badge response-positive">😊</span>
+                                {% elif survey.education_quality == 0 %}
+                                <span class="response-badge response-neutral">😐</span>
+                                {% else %}
+                                <span class="response-badge response-negative">😞</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if survey.healthcare_quality == 1 %}
+                                <span class="response-badge response-positive">😊</span>
+                                {% elif survey.healthcare_quality == 0 %}
+                                <span class="response-badge response-neutral">😐</span>
+                                {% else %}
+                                <span class="response-badge response-negative">😞</span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Infrastructure -->
+                            <td>
+                                {% if survey.infrastructure_satisfaction == 1 %}
+                                <span class="response-badge response-positive">😊</span>
+                                {% elif survey.infrastructure_satisfaction == 0 %}
+                                <span class="response-badge response-neutral">😐</span>
+                                {% else %}
+                                <span class="response-badge response-negative">😞</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if survey.infrastructure_impact == 1 %}
+                                <span class="response-badge response-positive">😊</span>
+                                {% elif survey.infrastructure_impact == 0 %}
+                                <span class="response-badge response-neutral">😐</span>
+                                {% else %}
+                                <span class="response-badge response-negative">😞</span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Future -->
+                            <td>
+                                {% if survey.future_optimism == 1 %}
+                                <span class="response-badge response-positive">😊</span>
+                                {% elif survey.future_optimism == 0 %}
+                                <span class="response-badge response-neutral">😐</span>
+                                {% else %}
+                                <span class="response-badge response-negative">😞</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if survey.candidate_improvement == 1 %}
+                                <span class="response-badge response-positive">😊</span>
+                                {% elif survey.candidate_improvement == 0 %}
+                                <span class="response-badge response-neutral">😐</span>
+                                {% else %}
+                                <span class="response-badge response-negative">😞</span>
+                                {% endif %}
+                            </td>
+                            
+                            <!-- Overall Sentiment -->
+                            <td>
+                                {% set sentiment = survey.calculate_overall_sentiment() %}
+                                <span class="sentiment-badge sentiment-{{ sentiment.lower() }}">
+                                    {{ sentiment }}
+                                </span>
+                            </td>
+                            
+                            <td>{{ survey.timestamp.strftime('%Y-%m-%d %H:%M') if survey.timestamp else 'N/A' }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="17" class="text-center py-5">
+                                <i class="fas fa-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                                <p class="mt-3 text-muted">No survey responses available yet.</p>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if pagination.pages > 1 %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                        <a class="page-link" href="{% if pagination.has_prev %}{{ url_for('admin_bp.individual_responses', page=pagination.prev_num) }}{% else %}#{% endif %}">
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </a>
+                    </li>
+                    
+                    {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('admin_bp.individual_responses', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                        <a class="page-link" href="{% if pagination.has_next %}{{ url_for('admin_bp.individual_responses', page=pagination.next_num) }}{% else %}#{% endif %}">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Enable tooltips
+        const tooltips = document.querySelectorAll('.question-tooltip');
+        tooltips.forEach(el => {
+            new bootstrap.Tooltip(el);
+        });
+
+        // CSV Export Function
+        function exportToCSV() {
+            let csv = 'Voter ID,Halka,Economy_Satisfaction,Economy_Inflation,Government_Performance,Government_Trust,Security_Satisfaction,Safety_Feeling,Education_Quality,Healthcare_Quality,Infrastructure_Satisfaction,Infrastructure_Impact,Future_Optimism,Candidate_Improvement,Overall_Sentiment,Date\n';
+            
+            const rows = document.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length > 1) {
+                    const voterId = cells[1].textContent.trim();
+                    const halka = cells[2].textContent.trim();
+                    const responses = [];
+                    for (let i = 3; i <= 14; i++) {
+                        const emoji = cells[i].textContent.trim();
+                        if (emoji.includes('😊')) responses.push('1');
+                        else if (emoji.includes('😐')) responses.push('0');
+                        else responses.push('-1');
+                    }
+                    const sentiment = cells[15].textContent.trim();
+                    const date = cells[16].textContent.trim();
+                    
+                    csv += `${voterId},${halka},${responses.join(',')},${sentiment},${date}\n`;
+                }
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'survey_responses_' + new Date().toISOString().split('T')[0] + '.csv';
+            a.click();
+        }
+    </script>
+</body>
+</html>

@@ -63,9 +63,65 @@ class Admin(db.Model):
         return self.reset_token == token and datetime.utcnow() < self.token_expiry 
 
 class PreSurvey(db.Model):
+    """Structured pre-election survey with Yes/No/Neutral responses"""
     id = db.Column(db.Integer, primary_key=True)
     voter_id = db.Column(db.String(100), db.ForeignKey('voter.voter_id'), nullable=False)
-    responses = db.Column(db.PickleType, nullable=False)  # List of 15 answers (Yes/No/Neutral)
+    
+    # ✅ Economy Questions (1=Positive/Yes, 0=Neutral, -1=Negative/No)
+    economy_satisfaction = db.Column(db.Integer, nullable=False)  # Satisfied with economic situation?
+    economy_inflation_impact = db.Column(db.Integer, nullable=False)  # Has inflation affected you?
+    
+    # ✅ Government Performance Questions
+    government_performance = db.Column(db.Integer, nullable=False)  # Satisfied with govt performance?
+    government_corruption = db.Column(db.Integer, nullable=False)  # Govt reducing corruption?
+    
+    # ✅ Security & Law Questions
+    security_safety = db.Column(db.Integer, nullable=False)  # Feel safe in your area?
+    security_law_order = db.Column(db.Integer, nullable=False)  # Law & order improved?
+    
+    # ✅ Education & Healthcare Questions
+    education_quality = db.Column(db.Integer, nullable=False)  # Satisfied with education quality?
+    healthcare_access = db.Column(db.Integer, nullable=False)  # Access to healthcare improved?
+    
+    # ✅ Infrastructure Questions
+    infrastructure_roads = db.Column(db.Integer, nullable=False)  # Road conditions satisfactory?
+    infrastructure_utilities = db.Column(db.Integer, nullable=False)  # Utilities (electricity/water) reliable?
+    
+    # ✅ Future Expectations Questions
+    future_optimism = db.Column(db.Integer, nullable=False)  # Optimistic about Pakistan's future?
+    future_confidence = db.Column(db.Integer, nullable=False)  # Confident in leadership direction?
+    
+    # ✅ Calculated Overall Sentiment
+    overall_sentiment = db.Column(db.String(20))  # Positive/Negative/Neutral (calculated average)
+    overall_score = db.Column(db.Float, default=0.0)  # Average of all responses
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def calculate_overall_sentiment(self):
+        """Calculate overall sentiment from all responses"""
+        responses = [
+            self.economy_satisfaction, self.economy_inflation_impact,
+            self.government_performance, self.government_corruption,
+            self.security_safety, self.security_law_order,
+            self.education_quality, self.healthcare_access,
+            self.infrastructure_roads, self.infrastructure_utilities,
+            self.future_optimism, self.future_confidence
+        ]
+        
+        avg_score = sum(responses) / len(responses)
+        self.overall_score = round(avg_score, 2)
+        
+        if avg_score > 0.2:
+            self.overall_sentiment = 'Positive'
+        elif avg_score < -0.2:
+            self.overall_sentiment = 'Negative'
+        else:
+            self.overall_sentiment = 'Neutral'
+        
+        return self.overall_sentiment
+    
+    def __repr__(self):
+        return f'<PreSurvey {self.voter_id}: {self.overall_sentiment}>'
 
 
 class Complaint(db.Model):

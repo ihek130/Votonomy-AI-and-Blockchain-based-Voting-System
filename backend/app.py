@@ -1,4 +1,4 @@
-# app.py - FIXED VERSION
+# app.py - UPDATED VERSION with Structured Survey
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
@@ -9,9 +9,9 @@ from admin import admin_bp  # Admin panel routes
 from models import Voter, VoterList
 from geo_utils import get_halka_from_address
 from chatbot import chatbot_bp
-from nlp_analysis import analyze_voter_sentiment
-from content_validator import validate_survey_content, content_validator
-from models import PreSurveyNLP, SentimentAnalytics
+# from nlp_analysis import analyze_voter_sentiment  # ✅ OLD NLP - No longer needed
+# from content_validator import validate_survey_content, content_validator  # ✅ OLD - No longer needed
+from models import PreSurveyNLP, SentimentAnalytics  # Keep for backwards compatibility with existing data
 from datetime import datetime
 
 app = Flask(__name__)
@@ -49,21 +49,22 @@ with app.app_context():
 # Register admin routes
 app.register_blueprint(admin_bp, url_prefix='/admin')
 
-# ✅ FIXED: Helper function to update sentiment analytics
+# ✅ UPDATED: Simple analytics for structured survey responses
 def update_sentiment_analytics():
-    """Update aggregated sentiment analytics for admin dashboard"""
+    """Update aggregated sentiment analytics for admin dashboard - Structured Survey Version"""
     try:
-        # Get all surveys
-        all_surveys = PreSurveyNLP.query.all()
+        # Get all structured surveys
+        all_surveys = PreSurvey.query.all()
         
         if not all_surveys:
+            print("No survey responses found")
             return
         
         total_responses = len(all_surveys)
         
-        # ✅ Calculate overall sentiment distribution
-        positive_count = sum(1 for s in all_surveys if s.overall_sentiment_label == 'Positive')
-        negative_count = sum(1 for s in all_surveys if s.overall_sentiment_label == 'Negative')
+        # ✅ Calculate overall sentiment distribution from structured responses
+        positive_count = sum(1 for s in all_surveys if s.overall_sentiment == 'Positive')
+        negative_count = sum(1 for s in all_surveys if s.overall_sentiment == 'Negative')
         neutral_count = total_responses - positive_count - negative_count
         
         positive_percentage = (positive_count / total_responses) * 100
@@ -71,69 +72,79 @@ def update_sentiment_analytics():
         neutral_percentage = (neutral_count / total_responses) * 100
         
         # ✅ Calculate average sentiment score
-        avg_sentiment = sum(s.overall_sentiment_score for s in all_surveys) / total_responses
+        avg_sentiment = sum(s.overall_score for s in all_surveys) / total_responses
         
-        # ✅ Aggregate topic sentiments
+        # ✅ NEW: Aggregate topic-wise sentiments from structured responses
         topic_sentiments = {}
-        topic_names = ['Economy', 'Government Performance', 'Security & Law', 'Education & Healthcare', 'Infrastructure', 'Future Expectations']
         
-        for topic in topic_names:
-            scores = []
-            for survey in all_surveys:
-                if survey.sentiment_breakdown and topic in survey.sentiment_breakdown:
-                    topic_sentiment = survey.sentiment_breakdown[topic].get('sentiment', {})
-                    if 'compound' in topic_sentiment:
-                        scores.append(topic_sentiment['compound'])
-            
-            if scores:
-                topic_sentiments[topic] = {
-                    'average_score': sum(scores) / len(scores),
-                    'positive_count': sum(1 for score in scores if score > 0.1),
-                    'negative_count': sum(1 for score in scores if score < -0.1),
-                    'neutral_count': sum(1 for score in scores if -0.1 <= score <= 0.1),
-                    'total_responses': len(scores)
-                }
+        # Economy
+        economy_avg = sum([s.economy_satisfaction + s.economy_inflation_impact for s in all_surveys]) / (total_responses * 2)
+        topic_sentiments['Economy'] = {
+            'average_score': round(economy_avg, 2),
+            'positive_count': sum(1 for s in all_surveys if (s.economy_satisfaction + s.economy_inflation_impact) > 0),
+            'negative_count': sum(1 for s in all_surveys if (s.economy_satisfaction + s.economy_inflation_impact) < 0),
+            'neutral_count': sum(1 for s in all_surveys if (s.economy_satisfaction + s.economy_inflation_impact) == 0)
+        }
         
-        # ✅ Aggregate trending keywords
-        all_keywords = []
-        for survey in all_surveys:
-            if survey.keywords_extracted:
-                all_keywords.extend([kw['word'] for kw in survey.keywords_extracted[:5]])
+        # Government
+        govt_avg = sum([s.government_performance + s.government_corruption for s in all_surveys]) / (total_responses * 2)
+        topic_sentiments['Government Performance'] = {
+            'average_score': round(govt_avg, 2),
+            'positive_count': sum(1 for s in all_surveys if (s.government_performance + s.government_corruption) > 0),
+            'negative_count': sum(1 for s in all_surveys if (s.government_performance + s.government_corruption) < 0),
+            'neutral_count': sum(1 for s in all_surveys if (s.government_performance + s.government_corruption) == 0)
+        }
         
-        keyword_counts = {}
-        for keyword in all_keywords:
-            keyword_counts[keyword] = keyword_counts.get(keyword, 0) + 1
+        # Security
+        security_avg = sum([s.security_safety + s.security_law_order for s in all_surveys]) / (total_responses * 2)
+        topic_sentiments['Security & Law'] = {
+            'average_score': round(security_avg, 2),
+            'positive_count': sum(1 for s in all_surveys if (s.security_safety + s.security_law_order) > 0),
+            'negative_count': sum(1 for s in all_surveys if (s.security_safety + s.security_law_order) < 0),
+            'neutral_count': sum(1 for s in all_surveys if (s.security_safety + s.security_law_order) == 0)
+        }
         
-        trending_keywords = sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True)[:20]
+        # Education & Healthcare
+        edu_health_avg = sum([s.education_quality + s.healthcare_access for s in all_surveys]) / (total_responses * 2)
+        topic_sentiments['Education & Healthcare'] = {
+            'average_score': round(edu_health_avg, 2),
+            'positive_count': sum(1 for s in all_surveys if (s.education_quality + s.healthcare_access) > 0),
+            'negative_count': sum(1 for s in all_surveys if (s.education_quality + s.healthcare_access) < 0),
+            'neutral_count': sum(1 for s in all_surveys if (s.education_quality + s.healthcare_access) == 0)
+        }
         
-        # ✅ Aggregate emotions
-        emotion_totals = {}
-        emotion_count = 0
-        for survey in all_surveys:
-            if survey.emotion_analysis and 'emotions' in survey.emotion_analysis:
-                for emotion, percentage in survey.emotion_analysis['emotions'].items():
-                    emotion_totals[emotion] = emotion_totals.get(emotion, 0) + percentage
-                    emotion_count += 1
+        # Infrastructure
+        infra_avg = sum([s.infrastructure_roads + s.infrastructure_utilities for s in all_surveys]) / (total_responses * 2)
+        topic_sentiments['Infrastructure'] = {
+            'average_score': round(infra_avg, 2),
+            'positive_count': sum(1 for s in all_surveys if (s.infrastructure_roads + s.infrastructure_utilities) > 0),
+            'negative_count': sum(1 for s in all_surveys if (s.infrastructure_roads + s.infrastructure_utilities) < 0),
+            'neutral_count': sum(1 for s in all_surveys if (s.infrastructure_roads + s.infrastructure_utilities) == 0)
+        }
         
-        emotion_distribution = {}
-        if emotion_count > 0:
-            for emotion, total in emotion_totals.items():
-                emotion_distribution[emotion] = total / len(all_surveys)
+        # Future Expectations
+        future_avg = sum([s.future_optimism + s.future_confidence for s in all_surveys]) / (total_responses * 2)
+        topic_sentiments['Future Expectations'] = {
+            'average_score': round(future_avg, 2),
+            'positive_count': sum(1 for s in all_surveys if (s.future_optimism + s.future_confidence) > 0),
+            'negative_count': sum(1 for s in all_surveys if (s.future_optimism + s.future_confidence) < 0),
+            'neutral_count': sum(1 for s in all_surveys if (s.future_optimism + s.future_confidence) == 0)
+        }
         
-        # ✅ Halka-wise sentiment (if voters have halka info)
+        # ✅ Halka-wise sentiment
         halka_sentiments = {}
         for survey in all_surveys:
             voter = Voter.query.filter_by(voter_id=survey.voter_id).first()
             if voter and voter.halka:
                 if voter.halka not in halka_sentiments:
                     halka_sentiments[voter.halka] = {'scores': [], 'count': 0}
-                halka_sentiments[voter.halka]['scores'].append(survey.overall_sentiment_score)
+                halka_sentiments[voter.halka]['scores'].append(survey.overall_score)
                 halka_sentiments[voter.halka]['count'] += 1
         
         for halka in halka_sentiments:
             scores = halka_sentiments[halka]['scores']
             halka_sentiments[halka]['average_score'] = sum(scores) / len(scores)
-            halka_sentiments[halka]['sentiment_label'] = 'Positive' if halka_sentiments[halka]['average_score'] > 0.1 else 'Negative' if halka_sentiments[halka]['average_score'] < -0.1 else 'Neutral'
+            halka_sentiments[halka]['sentiment_label'] = 'Positive' if halka_sentiments[halka]['average_score'] > 0.2 else 'Negative' if halka_sentiments[halka]['average_score'] < -0.2 else 'Neutral'
         
         # ✅ Update or create analytics record
         analytics = SentimentAnalytics.query.first()
@@ -147,8 +158,8 @@ def update_sentiment_analytics():
         analytics.neutral_percentage = round(neutral_percentage, 2)
         analytics.average_sentiment_score = round(avg_sentiment, 3)
         analytics.topic_sentiments = topic_sentiments
-        analytics.trending_keywords = dict(trending_keywords)
-        analytics.emotion_distribution = emotion_distribution
+        analytics.trending_keywords = {}  # No keywords in structured survey
+        analytics.emotion_distribution = {}  # No emotions in structured survey
         analytics.halka_sentiments = halka_sentiments
         analytics.last_updated = datetime.utcnow()
         
@@ -291,7 +302,7 @@ def register():
     return render_template('register.html')
 
 # ---------------------------
-# 3. Pre-Election Survey (FIXED - Enhanced Content Validation and Auto-Counter Updates)
+# 3. Pre-Election Survey (STRUCTURED - Fast & Accessible for All Users)
 # ---------------------------
 @app.route('/survey/pre', methods=['GET', 'POST'])
 def pre_survey():
@@ -302,106 +313,49 @@ def pre_survey():
         voter_id = session['voter_id']
         
         # ✅ Check if voter already completed survey
-        existing_survey = PreSurveyNLP.query.filter_by(voter_id=voter_id).first()
+        existing_survey = PreSurvey.query.filter_by(voter_id=voter_id).first()
         if existing_survey:
             flash("⚠️ You have already completed the pre-election survey.", "warning")
             return redirect(url_for('cast_vote'))
         
-        # ✅ Get natural language responses
-        survey_data = {
-            'economic_response': request.form.get('economic_response', '').strip(),
-            'government_response': request.form.get('government_response', '').strip(),
-            'security_response': request.form.get('security_response', '').strip(),
-            'education_healthcare_response': request.form.get('education_healthcare_response', '').strip(),
-            'infrastructure_response': request.form.get('infrastructure_response', '').strip(),
-            'future_expectations_response': request.form.get('future_expectations_response', '').strip()
-        }
-        
-        # ✅ STEP 1: Validate content relevance and quality (MUCH MORE LENIENT)
-        quality_report = validate_survey_content(survey_data)
-        
-        if not quality_report['overall_valid']:
-            # ✅ Show specific errors for invalid responses
-            for issue in quality_report['issues']:
-                flash(f"❌ {issue}", "danger")
-            
-            # ✅ Show suggestions for improvement
-            for topic, validity in quality_report['topic_validity'].items():
-                if not validity['valid']:
-                    suggestion = content_validator.suggest_improvements(topic, validity['reason'])
-                    flash(f"💡 {topic.replace('_response', '').replace('_', ' ').title()}: {suggestion}", "info")
-            
-            flash(f"📊 Content Quality Score: {quality_report['quality_score']:.1f}% (minimum 50% required)", "warning")
-            return redirect(url_for('pre_survey'))
-        
-        # ✅ STEP 2: Validate minimum response length (VERY LENIENT - REMOVED)
-        # No minimum length requirement - accept even single words
-        
-        # ✅ STEP 3: Perform NLP sentiment analysis
         try:
-            analysis_result = analyze_voter_sentiment(survey_data)
-            print(f"✅ Sentiment analysis result: {analysis_result}")  # Debug logging
-        except Exception as e:
-            print(f"Exception in sentiment analysis: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            
-            # ✅ Create a fallback result
-            analysis_result = {
-                'success': True,
-                'analysis': {
-                    'overall_sentiment': {'compound': 0.0, 'label': 'Neutral'},
-                    'overall_emotions': {'emotions': {}, 'dominant_emotion': 'Neutral'},
-                    'overall_keywords': [],
-                    'overall_topics': {'topics': {}, 'primary_topic': 'General'},
-                    'topic_breakdown': {},
-                    'total_word_count': sum(len(text.split()) for text in survey_data.values())
-                },
-                'overall_score': 0.0,
-                'overall_label': 'Neutral'
-            }
-        
-        if analysis_result['success']:
-            # ✅ Create survey record with quality metrics
-            survey = PreSurveyNLP(
+            # ✅ Get structured responses (1=Positive, 0=Neutral, -1=Negative)
+            survey = PreSurvey(
                 voter_id=voter_id,
-                economic_response=survey_data['economic_response'],
-                government_response=survey_data['government_response'],
-                security_response=survey_data['security_response'],
-                education_healthcare_response=survey_data['education_healthcare_response'],
-                infrastructure_response=survey_data['infrastructure_response'],
-                future_expectations_response=survey_data['future_expectations_response'],
-                overall_sentiment_score=analysis_result.get('overall_score', 0.0),
-                overall_sentiment_label=analysis_result.get('overall_label', 'Neutral'),
-                sentiment_breakdown=analysis_result['analysis'].get('topic_breakdown', {}),
-                emotion_analysis=analysis_result['analysis'].get('overall_emotions', {}),
-                keywords_extracted=analysis_result['analysis'].get('overall_keywords', []),
-                topics_detected=analysis_result['analysis'].get('overall_topics', {})
+                economy_satisfaction=int(request.form.get('economy_satisfaction')),
+                economy_inflation_impact=int(request.form.get('economy_inflation_impact')),
+                government_performance=int(request.form.get('government_performance')),
+                government_corruption=int(request.form.get('government_corruption')),
+                security_safety=int(request.form.get('security_safety')),
+                security_law_order=int(request.form.get('security_law_order')),
+                education_quality=int(request.form.get('education_quality')),
+                healthcare_access=int(request.form.get('healthcare_access')),
+                infrastructure_roads=int(request.form.get('infrastructure_roads')),
+                infrastructure_utilities=int(request.form.get('infrastructure_utilities')),
+                future_optimism=int(request.form.get('future_optimism')),
+                future_confidence=int(request.form.get('future_confidence'))
             )
             
-            try:
-                db.session.add(survey)
-                db.session.commit()
-                
-                # ✅ FIXED: Auto-update analytics immediately after survey submission
-                try:
-                    update_sentiment_analytics()
-                    print("✅ Sentiment analytics updated automatically")
-                except Exception as analytics_error:
-                    print(f"Analytics update error: {analytics_error}")
-                    # Don't fail the whole process if analytics update fails
-                
-                session['step'] = 'pre_done'
-                flash("✅ Thank you for sharing your thoughtful responses! Your feedback has been recorded.", "success")
-                return redirect(url_for('cast_vote'))
-                
-            except Exception as db_error:
-                print(f"Database error: {db_error}")
-                db.session.rollback()
-                flash("❌ Error saving your responses. Please try again.", "danger")
-                return redirect(url_for('pre_survey'))
+            # ✅ Calculate overall sentiment
+            survey.calculate_overall_sentiment()
+            
+            # ✅ Save to database
+            db.session.add(survey)
+            db.session.commit()
+            
+            session['step'] = 'pre_done'
+            flash("✅ Thank you for completing the survey! You can now proceed to vote.", "success")
+            return redirect(url_for('cast_vote'))
+            
+        except Exception as e:
+            print(f"Error saving survey: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            db.session.rollback()
+            flash("❌ Error saving your responses. Please try again.", "danger")
+            return redirect(url_for('pre_survey'))
 
-    return render_template('pre_survey_nlp.html')
+    return render_template('pre_survey_structured.html')
 
 # ---------------------------
 # 4. Vote Casting

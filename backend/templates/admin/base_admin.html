@@ -48,27 +48,16 @@
             <i class="fas fa-exclamation-triangle me-2"></i>Voter Complaints
           </a>
         </li>
-        <!-- ✅ ADVANCED NLP SENTIMENT ANALYSIS (Keep) -->
+        <!-- ✅ SENTIMENT ANALYSIS -->
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('admin_bp.nlp_sentiment_analysis') }}">
-            <i class="fas fa-brain me-2"></i>Sentiment Analysis
-          </a>
-        </li>
-        <!-- ✅ CONTENT QUALITY REVIEW (Keep) -->
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('admin_bp.content_quality_review') }}">
-            <i class="fas fa-shield-alt me-2"></i>Content Quality
+          <a class="nav-link" href="{{ url_for('admin_bp.sentiment_analysis') }}">
+            <i class="fas fa-chart-pie me-2"></i>Sentiment Analysis
           </a>
         </li>
         <!-- ✅ EXPORT OPTIONS -->
         <li class="nav-item">
           <a class="nav-link" href="{{ url_for('admin_bp.download_results') }}">
             <i class="fas fa-file-excel me-2"></i>Download Results
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('admin_bp.export_sentiment_data') }}">
-            <i class="fas fa-download me-2"></i>Export Sentiment Data
           </a>
         </li>
       </ul>

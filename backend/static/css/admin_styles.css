@@ -148,3 +148,334 @@
   color: #fff;
 }
 
+/* ========== SENTIMENT DASHBOARD - PROFESSIONAL IMPLEMENTATION ========== */
+
+/* Main Wrapper */
+.sentiment-dashboard-wrapper {
+  padding: 1.5rem;
+  height: calc(100vh - 80px);
+  overflow-y: auto;
+}
+
+/* Header */
+.sentiment-header-new {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 3px solid #01411C;
+}
+
+.sentiment-header-new h3 {
+  color: #01411C;
+  font-weight: 700;
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.header-actions .btn {
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+}
+
+/* Stats Grid - 5 Cards */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-card {
+  background: white;
+  padding: 1.25rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-left: 5px solid #01411C;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.stat-card.positive { border-left-color: #28a745; }
+.stat-card.negative { border-left-color: #dc3545; }
+.stat-card.neutral { border-left-color: #ffc107; }
+.stat-card.info { border-left-color: #17a2b8; }
+.stat-card.participation { border-left-color: #6f42c1; }
+
+.stat-card i {
+  font-size: 2rem;
+  opacity: 0.8;
+}
+
+.stat-card.positive i { color: #28a745; }
+.stat-card.negative i { color: #dc3545; }
+.stat-card.neutral i { color: #ffc107; }
+.stat-card.info i { color: #17a2b8; }
+.stat-card.participation i { color: #6f42c1; }
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #01411C;
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Content Row - 3 Cards in a Row */
+.content-row-1 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Chart Card */
+.chart-card {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 450px;
+}
+
+.card-header {
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #01411C 0%, #0F5132 100%);
+  border-bottom: 3px solid #01411C;
+}
+
+.card-header h6 {
+  color: white;
+  font-weight: 600;
+  margin: 0;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.card-header i {
+  opacity: 0.9;
+}
+
+.card-body {
+  padding: 2rem;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.card-body canvas {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* SCROLLABLE CARD BODY - THIS IS THE KEY */
+.card-body-scroll {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.scrollable-content {
+  height: 100%;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  padding: 1rem 1.25rem;
+  padding-right: 0.5rem;
+}
+
+/* CUSTOM SCROLLBAR - PROFESSIONAL GOOGLE STYLE */
+.scrollable-content::-webkit-scrollbar {
+  width: 14px;
+}
+
+.scrollable-content::-webkit-scrollbar-track {
+  background: #f8f9fa;
+  border-left: 1px solid #e9ecef;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb {
+  background: #01411C;
+  border-radius: 10px;
+  border: 3px solid #f8f9fa;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb:hover {
+  background: #0F5132;
+}
+
+/* Firefox */
+.scrollable-content {
+  scrollbar-width: auto;
+  scrollbar-color: #01411C #f8f9fa;
+}
+
+/* Topic Item */
+.topic-item {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #01411C;
+  transition: background 0.2s;
+}
+
+.topic-item:hover {
+  background: #e9ecef;
+}
+
+.topic-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.topic-header strong {
+  color: #01411C;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.topic-progress {
+  display: flex;
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+  background: #e9ecef;
+}
+
+.progress-segment {
+  transition: width 0.3s;
+}
+
+.progress-segment.positive { background: #28a745; }
+.progress-segment.neutral { background: #ffc107; }
+.progress-segment.negative { background: #dc3545; }
+
+.topic-stats {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.85rem;
+}
+
+.stat-positive { color: #28a745; font-weight: 600; }
+.stat-neutral { color: #ffc107; font-weight: 600; }
+.stat-negative { color: #dc3545; font-weight: 600; }
+
+/* Halka Item */
+.halka-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #01411C;
+  transition: background 0.2s;
+}
+
+.halka-item:hover {
+  background: #e9ecef;
+}
+
+.halka-info strong {
+  display: block;
+  color: #01411C;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.halka-count {
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+/* Badges */
+.badge {
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-success {
+  background-color: #28a745;
+  color: white;
+}
+
+.badge-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.badge-warning {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+/* Responsive Design */
+@media (max-width: 1400px) {
+  .content-row-1 {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .chart-card:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 992px) {
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .content-row-1 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .sentiment-header-new h3 {
+    font-size: 1.25rem;
+  }
+}
+

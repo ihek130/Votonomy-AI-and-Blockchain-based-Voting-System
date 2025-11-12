@@ -5,14 +5,11 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer
 from flask_mail import Message
-from models import db, Voter, Candidate, Vote, Admin
+from models import db, Voter, Candidate, Vote, Admin, PreSurvey, SentimentAnalytics
 from data import positions_db, candidate_requests  # candidate_requests remains in-memory
 import pandas as pd
 import io
-from functools import wraps 
-from textblob import TextBlob
-from models import PreSurveyNLP, SentimentAnalytics
-from content_validator import validate_survey_content
+from functools import wraps
 
 admin_bp = Blueprint('admin_bp', __name__, template_folder='templates/admin')
 
@@ -71,10 +68,12 @@ Votonomy Team
 
 # ✅ FIXED: Enhanced sentiment analytics update function
 def update_sentiment_analytics():
-    """Update aggregated sentiment analytics for admin dashboard"""
+    """Update aggregated sentiment analytics for admin dashboard - STRUCTURED SURVEY"""
     try:
+        from models import PreSurvey
+        
         # Get all surveys
-        all_surveys = PreSurveyNLP.query.all()
+        all_surveys = PreSurvey.query.all()
         
         if not all_surveys:
             print("No surveys found for analytics update")
@@ -84,8 +83,8 @@ def update_sentiment_analytics():
         print(f"Processing {total_responses} survey responses for analytics...")
         
         # ✅ Calculate overall sentiment distribution
-        positive_count = sum(1 for s in all_surveys if s.overall_sentiment_label == 'Positive')
-        negative_count = sum(1 for s in all_surveys if s.overall_sentiment_label == 'Negative')
+        positive_count = sum(1 for s in all_surveys if s.calculate_overall_sentiment() == 'Positive')
+        negative_count = sum(1 for s in all_surveys if s.calculate_overall_sentiment() == 'Negative')
         neutral_count = total_responses - positive_count - negative_count
         
         positive_percentage = (positive_count / total_responses) * 100
@@ -94,70 +93,74 @@ def update_sentiment_analytics():
         
         print(f"Sentiment distribution: {positive_percentage:.1f}% positive, {negative_percentage:.1f}% negative, {neutral_percentage:.1f}% neutral")
         
-        # ✅ Calculate average sentiment score
-        avg_sentiment = sum(s.overall_sentiment_score for s in all_surveys) / total_responses
+        # ✅ Calculate average sentiment score (average of all 12 fields)
+        all_field_values = []
+        for survey in all_surveys:
+            all_field_values.extend([
+                survey.economy_satisfaction, survey.economy_inflation_impact,
+                survey.government_performance, survey.government_corruption,
+                survey.security_safety, survey.security_law_order,
+                survey.education_quality, survey.healthcare_access,
+                survey.infrastructure_roads, survey.infrastructure_utilities,
+                survey.future_optimism, survey.future_confidence
+            ])
+        avg_sentiment = sum(all_field_values) / len(all_field_values)
         
         # ✅ Aggregate topic sentiments
         topic_sentiments = {}
-        topic_names = ['Economy', 'Government Performance', 'Security & Law', 'Education & Healthcare', 'Infrastructure', 'Future Expectations']
+        topic_mapping = {
+            'Economy': ['economy_satisfaction', 'economy_inflation_impact'],
+            'Government Performance': ['government_performance', 'government_corruption'],
+            'Security & Law': ['security_safety', 'security_law_order'],
+            'Education & Healthcare': ['education_quality', 'healthcare_access'],
+            'Infrastructure': ['infrastructure_roads', 'infrastructure_utilities'],
+            'Future Expectations': ['future_optimism', 'future_confidence']
+        }
         
-        for topic in topic_names:
-            scores = []
+        for topic, fields in topic_mapping.items():
+            topic_scores = []
             for survey in all_surveys:
-                if survey.sentiment_breakdown and topic in survey.sentiment_breakdown:
-                    topic_sentiment = survey.sentiment_breakdown[topic].get('sentiment', {})
-                    if 'compound' in topic_sentiment:
-                        scores.append(topic_sentiment['compound'])
+                for field in fields:
+                    topic_scores.append(getattr(survey, field))
             
-            if scores:
-                topic_sentiments[topic] = {
-                    'average_score': sum(scores) / len(scores),
-                    'positive_count': sum(1 for score in scores if score > 0.1),
-                    'negative_count': sum(1 for score in scores if score < -0.1),
-                    'neutral_count': sum(1 for score in scores if -0.1 <= score <= 0.1),
-                    'total_responses': len(scores)
-                }
+            avg_score = sum(topic_scores) / len(topic_scores)
+            positive = sum(1 for score in topic_scores if score == 1)
+            negative = sum(1 for score in topic_scores if score == -1)
+            neutral = sum(1 for score in topic_scores if score == 0)
+            
+            topic_sentiments[topic] = {
+                'average_score': round(avg_score, 3),
+                'positive_count': positive,
+                'negative_count': negative,
+                'neutral_count': neutral,
+                'total_responses': len(topic_scores)
+            }
         
-        # ✅ Aggregate trending keywords
-        all_keywords = []
-        for survey in all_surveys:
-            if survey.keywords_extracted:
-                all_keywords.extend([kw['word'] for kw in survey.keywords_extracted[:5]])
-        
-        keyword_counts = {}
-        for keyword in all_keywords:
-            keyword_counts[keyword] = keyword_counts.get(keyword, 0) + 1
-        
-        trending_keywords = sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True)[:20]
-        
-        # ✅ Aggregate emotions
-        emotion_totals = {}
-        emotion_count = 0
-        for survey in all_surveys:
-            if survey.emotion_analysis and 'emotions' in survey.emotion_analysis:
-                for emotion, percentage in survey.emotion_analysis['emotions'].items():
-                    emotion_totals[emotion] = emotion_totals.get(emotion, 0) + percentage
-                    emotion_count += 1
-        
-        emotion_distribution = {}
-        if emotion_count > 0:
-            for emotion, total in emotion_totals.items():
-                emotion_distribution[emotion] = total / len(all_surveys)
-        
-        # ✅ Halka-wise sentiment (if voters have halka info)
+        # ✅ Halka-wise sentiment
         halka_sentiments = {}
         for survey in all_surveys:
             voter = Voter.query.filter_by(voter_id=survey.voter_id).first()
             if voter and voter.halka:
                 if voter.halka not in halka_sentiments:
                     halka_sentiments[voter.halka] = {'scores': [], 'count': 0}
-                halka_sentiments[voter.halka]['scores'].append(survey.overall_sentiment_score)
+                
+                # Calculate average score for this survey
+                survey_avg = sum([
+                    survey.economy_satisfaction, survey.economy_inflation_impact,
+                    survey.government_performance, survey.government_corruption,
+                    survey.security_safety, survey.security_law_order,
+                    survey.education_quality, survey.healthcare_access,
+                    survey.infrastructure_roads, survey.infrastructure_utilities,
+                    survey.future_optimism, survey.future_confidence
+                ]) / 12
+                
+                halka_sentiments[voter.halka]['scores'].append(survey_avg)
                 halka_sentiments[voter.halka]['count'] += 1
         
         for halka in halka_sentiments:
             scores = halka_sentiments[halka]['scores']
             halka_sentiments[halka]['average_score'] = sum(scores) / len(scores)
-            halka_sentiments[halka]['sentiment_label'] = 'Positive' if halka_sentiments[halka]['average_score'] > 0.1 else 'Negative' if halka_sentiments[halka]['average_score'] < -0.1 else 'Neutral'
+            halka_sentiments[halka]['sentiment_label'] = 'Positive' if halka_sentiments[halka]['average_score'] > 0.2 else 'Negative' if halka_sentiments[halka]['average_score'] < -0.2 else 'Neutral'
         
         # ✅ Update or create analytics record
         analytics = SentimentAnalytics.query.first()
@@ -171,8 +174,8 @@ def update_sentiment_analytics():
         analytics.neutral_percentage = round(neutral_percentage, 2)
         analytics.average_sentiment_score = round(avg_sentiment, 3)
         analytics.topic_sentiments = topic_sentiments
-        analytics.trending_keywords = dict(trending_keywords)
-        analytics.emotion_distribution = emotion_distribution
+        analytics.trending_keywords = {}  # Not applicable for structured survey
+        analytics.emotion_distribution = {}  # Not applicable for structured survey
         analytics.halka_sentiments = halka_sentiments
         analytics.last_updated = datetime.utcnow()
         
@@ -181,6 +184,8 @@ def update_sentiment_analytics():
         
     except Exception as e:
         print(f"Error updating sentiment analytics: {str(e)}")
+        import traceback
+        traceback.print_exc()
         db.session.rollback()
         import traceback
         traceback.print_exc()
@@ -295,7 +300,7 @@ def admin_welcome():
 @admin_bp.route('/dashboard')
 @admin_login_required
 def admin_dashboard():
-    from models import Complaint, PreSurveyNLP
+    from models import Complaint, PreSurvey  # ✅ Updated to use PreSurvey
     update_vote_counts()
     
     # ✅ FORCE ANALYTICS UPDATE on dashboard load
@@ -313,6 +318,7 @@ def admin_dashboard():
             'total_responses': analytics.total_responses,
             'positive_percentage': analytics.positive_percentage,
             'negative_percentage': analytics.negative_percentage,
+            'neutral_percentage': analytics.neutral_percentage,
             'average_score': analytics.average_sentiment_score
         }
     
@@ -517,333 +523,40 @@ def delete_complaint(complaint_id):
 # ------------------------------
 # Content Quality Review Routes
 # ------------------------------
-@admin_bp.route('/content-quality-review')
-@admin_login_required
-def content_quality_review():
-    """Review survey responses for content quality"""
-    
-    page = request.args.get('page', 1, type=int)
-    per_page = 15
-    
-    # ✅ Get filter parameters
-    quality_filter = request.args.get('quality_filter', '')
-    halka_filter = request.args.get('halka_filter', '')
-    date_from = request.args.get('date_from', '')
-    
-    # ✅ Base query
-    query = PreSurveyNLP.query
-    
-    # ✅ Apply filters
-    if date_from:
-        from datetime import datetime
-        try:
-            date_obj = datetime.strptime(date_from, '%Y-%m-%d')
-            query = query.filter(PreSurveyNLP.created_at >= date_obj)
-        except ValueError:
-            pass
-    
-    if halka_filter:
-        # Join with Voter table to filter by halka
-        query = query.join(Voter, PreSurveyNLP.voter_id == Voter.voter_id).filter(Voter.halka == halka_filter)
-    
-    # ✅ Get paginated results
-    surveys = query.order_by(PreSurveyNLP.created_at.desc()).paginate(
-        page=page, per_page=per_page, error_out=False
-    )
-    
-    # ✅ Process survey data with quality analysis
-    survey_details = []
-    total_responses = 0
-    high_quality_count = 0
-    flagged_count = 0
-    poor_quality_count = 0
-    
-    for survey in surveys.items:
-        voter = Voter.query.filter_by(voter_id=survey.voter_id).first()
-        
-        # ✅ Re-analyze content quality for display
-        responses = {
-            'economic_response': survey.economic_response,
-            'government_response': survey.government_response,
-            'security_response': survey.security_response,
-            'education_healthcare_response': survey.education_healthcare_response,
-            'infrastructure_response': survey.infrastructure_response,
-            'future_expectations_response': survey.future_expectations_response
-        }
-        
-        quality_report = validate_survey_content(responses)
-        
-        # ✅ Apply quality filter
-        if quality_filter:
-            if quality_filter == 'high' and quality_report['quality_score'] < 80:
-                continue
-            elif quality_filter == 'medium' and not (50 <= quality_report['quality_score'] < 80):
-                continue
-            elif quality_filter == 'low' and quality_report['quality_score'] >= 50:
-                continue
-        
-        survey_details.append({
-            'survey': survey,
-            'voter': voter,
-            'quality_report': quality_report
-        })
-        
-        # ✅ Count quality categories
-        total_responses += 1
-        if quality_report['quality_score'] >= 80:
-            high_quality_count += 1
-        elif quality_report['quality_score'] >= 50:
-            flagged_count += 1
-        else:
-            poor_quality_count += 1
-    
-    return render_template("content_quality_review.html", 
-                         surveys=survey_details,
-                         pagination=surveys,
-                         total_responses=total_responses,
-                         high_quality_count=high_quality_count,
-                         flagged_count=flagged_count,
-                         poor_quality_count=poor_quality_count)
-
-@admin_bp.route('/approve-response/<int:survey_id>', methods=['POST'])
-@admin_login_required
-def approve_response(survey_id):
-    """Approve a flagged response as high quality"""
-    
-    try:
-        survey = PreSurveyNLP.query.get_or_404(survey_id)
-        
-        # ✅ Mark as approved in sentiment_breakdown (using existing JSON field)
-        if not survey.sentiment_breakdown:
-            survey.sentiment_breakdown = {}
-        
-        survey.sentiment_breakdown['admin_approved'] = True
-        survey.sentiment_breakdown['approval_date'] = datetime.utcnow().isoformat()
-        
-        db.session.commit()
-        
-        return jsonify({'success': True, 'message': 'Response approved successfully'})
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
-@admin_bp.route('/flag-response/<int:survey_id>', methods=['POST'])
-@admin_login_required
-def flag_response(survey_id):
-    """Flag a response for quality issues"""
-    
-    try:
-        data = request.get_json()
-        reason = data.get('reason', 'Quality concerns')
-        
-        survey = PreSurveyNLP.query.get_or_404(survey_id)
-        
-        # ✅ Mark as flagged in sentiment_breakdown
-        if not survey.sentiment_breakdown:
-            survey.sentiment_breakdown = {}
-        
-        survey.sentiment_breakdown['admin_flagged'] = True
-        survey.sentiment_breakdown['flag_reason'] = reason
-        survey.sentiment_breakdown['flag_date'] = datetime.utcnow().isoformat()
-        
-        db.session.commit()
-        
-        return jsonify({'success': True, 'message': 'Response flagged successfully'})
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
-@admin_bp.route('/content-quality-stats')
-@admin_login_required
-def content_quality_stats():
-    """Get content quality statistics"""
-    
-    try:
-        all_surveys = PreSurveyNLP.query.all()
-        
-        if not all_surveys:
-            return jsonify({
-                'total_responses': 0,
-                'high_quality': 0,
-                'medium_quality': 0,
-                'low_quality': 0,
-                'flagged_by_admin': 0,
-                'approved_by_admin': 0
-            })
-        
-        stats = {
-            'total_responses': len(all_surveys),
-            'high_quality': 0,
-            'medium_quality': 0,
-            'low_quality': 0,
-            'flagged_by_admin': 0,
-            'approved_by_admin': 0
-        }
-        
-        for survey in all_surveys:
-            # ✅ Check admin flags
-            if survey.sentiment_breakdown:
-                if survey.sentiment_breakdown.get('admin_flagged'):
-                    stats['flagged_by_admin'] += 1
-                if survey.sentiment_breakdown.get('admin_approved'):
-                    stats['approved_by_admin'] += 1
-            
-            # ✅ Analyze quality
-            responses = {
-                'economic_response': survey.economic_response,
-                'government_response': survey.government_response,
-                'security_response': survey.security_response,
-                'education_healthcare_response': survey.education_healthcare_response,
-                'infrastructure_response': survey.infrastructure_response,
-                'future_expectations_response': survey.future_expectations_response
-            }
-            
-            quality_report = validate_survey_content(responses)
-            score = quality_report['quality_score']
-            
-            if score >= 80:
-                stats['high_quality'] += 1
-            elif score >= 50:
-                stats['medium_quality'] += 1
-            else:
-                stats['low_quality'] += 1
-        
-        return jsonify(stats)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)})
-
+# ✅ SENTIMENT ANALYSIS ROUTES - STRUCTURED SURVEY
 # ------------------------------
-# ✅ ENHANCED: Advanced NLP Sentiment Analysis Routes with Auto-Update
-# ------------------------------
-@admin_bp.route('/sentiment/nlp-analysis')
+@admin_bp.route('/sentiment/analysis')
 @admin_login_required
-def nlp_sentiment_analysis():
-    """Advanced NLP sentiment analysis dashboard with auto-update"""
+def sentiment_analysis():
+    """Advanced Sentiment Analysis Dashboard - USA-Style Voting System"""
+    from models import PreSurvey  # ✅ Updated to use structured survey
     
     # ✅ FORCE ANALYTICS UPDATE every time this page is loaded
     try:
         update_sentiment_analytics()
-        print("✅ Sentiment analytics auto-updated on NLP dashboard load")
+        print("✅ Sentiment analytics auto-updated on dashboard load")
     except Exception as e:
         print(f"❌ Error auto-updating sentiment analytics: {e}")
     
     # ✅ Get or create analytics record
     analytics = SentimentAnalytics.query.first()
     
-    return render_template("nlp_sentiment_dashboard.html", analytics=analytics)
+    # ✅ Get individual survey responses for detailed view
+    total_surveys = PreSurvey.query.count()
+    recent_surveys = PreSurvey.query.order_by(PreSurvey.created_at.desc()).limit(10).all()
+    
+    # ✅ Calculate participation rate
+    total_voters = Voter.query.filter_by(approved=True).count()
+    participation_rate = (total_surveys / total_voters * 100) if total_voters > 0 else 0
+    
+    return render_template("sentiment_dashboard.html", 
+                          analytics=analytics,
+                          total_surveys=total_surveys,
+                          participation_rate=round(participation_rate, 1),
+                          recent_surveys=recent_surveys)
 
-@admin_bp.route('/sentiment/individual-responses')
-@admin_login_required  
-def individual_responses():
-    """View individual voter responses with detailed analysis"""
-    
-    page = request.args.get('page', 1, type=int)
-    per_page = 10
-    
-    # ✅ Get paginated survey responses
-    surveys = PreSurveyNLP.query.order_by(PreSurveyNLP.created_at.desc()).paginate(
-        page=page, per_page=per_page, error_out=False
-    )
-    
-    # ✅ Get voter details for each survey
-    survey_details = []
-    for survey in surveys.items:
-        voter = Voter.query.filter_by(voter_id=survey.voter_id).first()
-        survey_details.append({
-            'survey': survey,
-            'voter': voter
-        })
-    
-    return render_template("individual_responses.html", 
-                         survey_details=survey_details, 
-                         pagination=surveys)
-
-@admin_bp.route('/sentiment/export-data')
-@admin_login_required
-def export_sentiment_data():
-    """Export sentiment analysis data to Excel"""
-    
-    try:
-        # ✅ Get all survey data
-        surveys = PreSurveyNLP.query.all()
-        
-        if not surveys:
-            flash("No sentiment data available to export.", "warning")
-            return redirect(url_for('admin_bp.nlp_sentiment_analysis'))
-        
-        # ✅ Prepare data for export
-        export_data = []
-        for survey in surveys:
-            voter = Voter.query.filter_by(voter_id=survey.voter_id).first()
-            
-            row = {
-                'Voter ID': survey.voter_id,
-                'Voter Name': voter.name if voter else 'Unknown',
-                'Halka': voter.halka if voter else 'Unknown',
-                'Overall Sentiment': survey.overall_sentiment_label,
-                'Sentiment Score': survey.overall_sentiment_score,
-                'Submission Date': survey.created_at.strftime('%Y-%m-%d %H:%M'),
-                'Economic Response': survey.economic_response,
-                'Government Response': survey.government_response,
-                'Security Response': survey.security_response,
-                'Education Healthcare Response': survey.education_healthcare_response,
-                'Infrastructure Response': survey.infrastructure_response,
-                'Future Expectations Response': survey.future_expectations_response
-            }
-            
-            # ✅ Add dominant emotion if available
-            if survey.emotion_analysis and 'dominant_emotion' in survey.emotion_analysis:
-                row['Dominant Emotion'] = survey.emotion_analysis['dominant_emotion']
-            
-            # ✅ Add top keywords if available
-            if survey.keywords_extracted:
-                top_keywords = [kw['word'] for kw in survey.keywords_extracted[:5]]
-                row['Top Keywords'] = ', '.join(top_keywords)
-            
-            export_data.append(row)
-        
-        # ✅ Create Excel file
-        df = pd.DataFrame(export_data)
-        output = io.BytesIO()
-        
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False, sheet_name='Sentiment Analysis')
-            
-            # ✅ Add summary sheet
-            analytics = SentimentAnalytics.query.first()
-            if analytics:
-                summary_data = {
-                    'Metric': [
-                        'Total Responses',
-                        'Positive Percentage',
-                        'Negative Percentage', 
-                        'Neutral Percentage',
-                        'Average Sentiment Score'
-                    ],
-                    'Value': [
-                        analytics.total_responses,
-                        f"{analytics.positive_percentage:.1f}%",
-                        f"{analytics.negative_percentage:.1f}%",
-                        f"{analytics.neutral_percentage:.1f}%",
-                        f"{analytics.average_sentiment_score:.3f}"
-                    ]
-                }
-                summary_df = pd.DataFrame(summary_data)
-                summary_df.to_excel(writer, index=False, sheet_name='Summary')
-        
-        output.seek(0)
-        
-        return send_file(
-            output,
-            download_name=f"sentiment_analysis_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
-            as_attachment=True,
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-        
-    except Exception as e:
-        flash(f"Error exporting data: {str(e)}", "danger")
-        return redirect(url_for('admin_bp.nlp_sentiment_analysis'))
+# REMOVED: individual_responses route - violates election integrity
+# Individual voter responses should remain confidential
 
 @admin_bp.route('/sentiment/refresh-analytics', methods=['POST'])
 @admin_login_required
@@ -856,57 +569,7 @@ def refresh_analytics():
     except Exception as e:
         flash(f"❌ Error refreshing analytics: {str(e)}", "danger")
     
-    return redirect(url_for('admin_bp.nlp_sentiment_analysis'))
-
-@admin_bp.route('/sentiment/topic-analysis/<topic>')
-@admin_login_required
-def topic_detailed_analysis(topic):
-    """Detailed analysis for a specific topic"""
-    
-    # ✅ Valid topics
-    valid_topics = [
-        'Economy', 'Government Performance', 'Security & Law', 
-        'Education & Healthcare', 'Infrastructure', 'Future Expectations'
-    ]
-    
-    if topic not in valid_topics:
-        flash("Invalid topic selected.", "danger")
-        return redirect(url_for('admin_bp.nlp_sentiment_analysis'))
-    
-    # ✅ Get all surveys with data for this topic
-    surveys = PreSurveyNLP.query.all()
-    topic_responses = []
-    
-    for survey in surveys:
-        if survey.sentiment_breakdown and topic in survey.sentiment_breakdown:
-            voter = Voter.query.filter_by(voter_id=survey.voter_id).first()
-            topic_data = survey.sentiment_breakdown[topic]
-            
-            # ✅ Get the original response text
-            response_field_map = {
-                'Economy': survey.economic_response,
-                'Government Performance': survey.government_response,
-                'Security & Law': survey.security_response,
-                'Education & Healthcare': survey.education_healthcare_response,
-                'Infrastructure': survey.infrastructure_response,
-                'Future Expectations': survey.future_expectations_response
-            }
-            
-            topic_responses.append({
-                'voter': voter,
-                'survey': survey,
-                'topic_data': topic_data,
-                'response_text': response_field_map.get(topic, ''),
-                'created_at': survey.created_at
-            })
-    
-    # ✅ Sort by sentiment score (most positive first)
-    topic_responses.sort(key=lambda x: x['topic_data']['sentiment']['compound'], reverse=True)
-    
-    return render_template("topic_analysis.html", 
-                         topic=topic, 
-                         responses=topic_responses,
-                         total_responses=len(topic_responses))
+    return redirect(url_for('admin_bp.sentiment_analysis'))
 
 # ------------------------------
 # Download Voting Results
