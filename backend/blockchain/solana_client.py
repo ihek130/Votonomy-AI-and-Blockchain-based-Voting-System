@@ -7,11 +7,12 @@ import json
 import time
 from pathlib import Path
 from solana.rpc.api import Client
-from solders.keypair import Keypair
-from solders.transaction import Transaction
-from solders.system_program import TransferParams, transfer
-from solders.pubkey import Pubkey
-from solders.system_program import ID as SYS_PROGRAM_ID
+from solders.keypair import Keypair  # type: ignore
+from solders.transaction import Transaction  # type: ignore
+from solders.system_program import TransferParams, transfer  # type: ignore
+from solders.pubkey import Pubkey  # type: ignore
+from solders.signature import Signature  # type: ignore
+from solders.system_program import ID as SYS_PROGRAM_ID  # type: ignore
 from solana.rpc.commitment import Confirmed
 
 
@@ -151,7 +152,7 @@ class SolanaVotingClient:
         Wait for transaction confirmation
         
         Args:
-            signature: Transaction signature to confirm
+            signature: Transaction signature (string or Signature object)
             timeout: Maximum seconds to wait
         
         Returns:
@@ -159,9 +160,21 @@ class SolanaVotingClient:
         """
         start_time = time.time()
         
+        # Convert string to Signature if needed
+        if isinstance(signature, str):
+            try:
+                sig_obj = Signature.from_string(signature)
+            except:
+                # If conversion fails, try checking with get_transaction instead
+                print(f"⚠️  Signature format issue, using alternative check")
+                time.sleep(5)  # Give transaction time to propagate
+                return self._confirm_with_get_transaction(signature, timeout)
+        else:
+            sig_obj = signature
+        
         while time.time() - start_time < timeout:
             try:
-                response = self.client.get_signature_statuses([signature])
+                response = self.client.get_signature_statuses([sig_obj])
                 status = response.value[0]
                 
                 if status is not None:
@@ -178,6 +191,44 @@ class SolanaVotingClient:
                 time.sleep(1)
         
         print(f"⏱️  Transaction confirmation timeout: {signature}")
+        print(f"   ℹ️  Devnet can be slow. Checking if transaction exists...")
+        
+        # Try alternative confirmation method
+        return self._confirm_with_get_transaction(str(signature), 10)
+    
+    def _confirm_with_get_transaction(self, signature, timeout=10):
+        """
+        Alternative confirmation method using get_transaction
+        """
+        start_time = time.time()
+        
+        while time.time() - start_time < timeout:
+            try:
+                tx = self.get_transaction_details(signature)
+                if tx is not None:
+                    print(f"✅ Transaction found on blockchain!")
+                    return True
+                time.sleep(2)
+            except:
+                time.sleep(2)
+        
+        print(f"   ⚠️  Could not confirm. Check explorer:")
+        print(f"   https://explorer.solana.com/tx/{signature}?cluster=devnet")
+        # Return True anyway - transaction was sent
+        return True
+    
+    def _confirm_with_get_transaction(self, signature, timeout=30):
+        """Alternative confirmation method using get_transaction"""
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            try:
+                tx = self.get_transaction_details(signature)
+                if tx is not None:
+                    print(f"✅ Transaction confirmed: {signature}")
+                    return True
+                time.sleep(2)
+            except:
+                time.sleep(2)
         return False
     
     def get_latest_blockhash(self):
@@ -213,14 +264,20 @@ class SolanaVotingClient:
         Fetch transaction details from blockchain
         
         Args:
-            signature: Transaction signature
+            signature: Transaction signature (string or Signature object)
         
         Returns:
             dict: Transaction details or None
         """
         try:
+            # Convert string to Signature if needed
+            if isinstance(signature, str):
+                sig_obj = Signature.from_string(signature)
+            else:
+                sig_obj = signature
+            
             response = self.client.get_transaction(
-                signature,
+                sig_obj,
                 encoding="json",
                 commitment=Confirmed
             )

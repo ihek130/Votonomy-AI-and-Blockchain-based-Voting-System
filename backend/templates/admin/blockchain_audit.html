@@ -1,0 +1,206 @@
+{% extends "base_admin.html" %}
+{% block title %}Blockchain Audit Report{% endblock %}
+
+{% block content %}
+<div class="audit-report-container">
+    <div class="report-header text-center mb-5">
+        <h1><i class="bi bi-file-earmark-check"></i> Blockchain Audit Report</h1>
+        <h3>Votonomy Election System</h3>
+        <p class="text-muted">
+            Generated: {{ report.report_generated.strftime('%Y-%m-%d %H:%M:%S UTC') }}
+        </p>
+    </div>
+
+    {% if report.error %}
+        <div class="alert alert-danger">
+            <strong>Error:</strong> {{ report.error }}
+        </div>
+    {% else %}
+        <!-- Summary Card -->
+        <div class="card mb-4 border-success">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="bi bi-check-circle"></i> Verification Summary</h4>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <h2 class="text-success">{{ report.total_verified_votes }}</h2>
+                        <p class="text-muted">Total Blockchain-Verified Votes</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h2 class="text-primary">{{ report.positions|length }}</h2>
+                        <p class="text-muted">Positions Verified</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h2 class="text-info">{{ report.blockchain_signatures|length }}</h2>
+                        <p class="text-muted">Unique Transactions</p>
+                    </div>
+                </div>
+                <hr>
+                <div class="alert alert-success mb-0">
+                    <strong>✅ {{ report.verification_status }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Position-wise Breakdown -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Position-wise Breakdown</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Position</th>
+                                <th>Total Verified Votes</th>
+                                <th>First Vote Timestamp</th>
+                                <th>Last Vote Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for position, data in report.positions.items() %}
+                            <tr>
+                                <td><strong>{{ position }}</strong></td>
+                                <td><span class="badge bg-success">{{ data.total }}</span></td>
+                                <td>{{ data.first_vote.strftime('%Y-%m-%d %H:%M:%S') if data.first_vote else 'N/A' }}</td>
+                                <td>{{ data.last_vote.strftime('%Y-%m-%d %H:%M:%S') if data.last_vote else 'N/A' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Blockchain Signatures -->
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="bi bi-fingerprint"></i> Blockchain Transaction Signatures</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    All {{ report.blockchain_signatures|length }} transaction signatures are publicly verifiable on Solana Explorer.
+                </p>
+                <div class="signatures-list">
+                    {% for signature in report.blockchain_signatures[:20] %}
+                    <div class="signature-item mb-2">
+                        <code>{{ signature }}</code>
+                        <a href="https://explorer.solana.com/tx/{{ signature }}?cluster=devnet" 
+                           target="_blank" class="btn btn-sm btn-outline-primary ms-2">
+                            <i class="bi bi-box-arrow-up-right"></i> Verify
+                        </a>
+                    </div>
+                    {% endfor %}
+                    {% if report.blockchain_signatures|length > 20 %}
+                    <p class="text-muted mt-3">
+                        ... and {{ report.blockchain_signatures|length - 20 }} more signatures.
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Transparency & Audit Information -->
+        <div class="card mb-4 border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-shield-check"></i> Transparency & Security</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-lock"></i> Data Encryption</h6>
+                        <ul>
+                            <li>All vote data encrypted with AES-256-GCM</li>
+                            <li>Voter IDs hashed with SHA-256 for anonymity</li>
+                            <li>No personally identifiable information on blockchain</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-database"></i> Blockchain Security</h6>
+                        <ul>
+                            <li>Immutable record on Solana blockchain</li>
+                            <li>Cryptographically signed transactions</li>
+                            <li>Publicly verifiable on Solana Explorer</li>
+                        </ul>
+                    </div>
+                </div>
+                <hr>
+                <div class="alert alert-info mb-0">
+                    <strong>📝 Note:</strong> {{ report.transparency_note }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Audit Trail -->
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Audit Trail</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Status:</strong> {{ report.audit_trail }}</p>
+                <p><strong>Blockchain Network:</strong> Solana Devnet</p>
+                <p><strong>Verification Method:</strong> On-chain transaction confirmation</p>
+                <p><strong>Report Timestamp:</strong> {{ report.report_generated.strftime('%Y-%m-%d %H:%M:%S UTC') }}</p>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Actions -->
+    <div class="text-center mt-4">
+        <button onclick="window.print()" class="btn btn-primary">
+            <i class="bi bi-printer"></i> Print Report
+        </button>
+        <a href="{{ url_for('admin_bp.blockchain_dashboard') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Blockchain Dashboard
+        </a>
+    </div>
+</div>
+
+<style>
+.audit-report-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.report-header {
+    border-bottom: 3px solid #01411C;
+    padding-bottom: 1.5rem;
+}
+
+.report-header h1 {
+    color: #01411C;
+    font-weight: bold;
+}
+
+.signature-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
+
+.signature-item code {
+    flex: 1;
+    font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.card-header h4, .card-header h5 {
+    margin: 0;
+}
+
+@media print {
+    .btn, .card-header {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+}
+</style>
+{% endblock %}

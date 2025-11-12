@@ -60,7 +60,8 @@ faq_answers = [
     "Pakistan's national symbols include the crescent and star flag (green and white), the national anthem 'Qaumi Taranah', and the national flower Jasmine."
 ]
 
-model = SentenceTransformer('your_sentence_Model')
+# Use a lightweight, fast sentence-transformer model for FAQ matching
+model = SentenceTransformer('all-MiniLM-L6-v2')
 # ✅ Generate embeddings after FAQ questions are defined
 faq_embeddings = model.encode(faq_questions, convert_to_tensor=True)
 

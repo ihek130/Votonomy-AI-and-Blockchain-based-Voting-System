@@ -22,11 +22,12 @@ python-dateutil==2.9.0.post0
 pytz==2025.1
 regex==2024.11.6
 requests==2.31.0
-sentence-transformers==2.2.2
+sentence-transformers==2.7.0
 six==1.17.0
 SQLAlchemy==2.0.40
 textblob==0.19.0
 torch==2.1.0
+transformers==4.35.2
 tqdm==4.67.1
 typing_extensions==4.13.2
 tzdata==2025.1

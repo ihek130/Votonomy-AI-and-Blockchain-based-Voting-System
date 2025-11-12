@@ -1,4 +1,4 @@
-# app.py - UPDATED VERSION with Structured Survey
+# app.py - UPDATED VERSION with Structured Survey + Blockchain Integration
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
@@ -13,6 +13,7 @@ from chatbot import chatbot_bp
 # from content_validator import validate_survey_content, content_validator  # ✅ OLD - No longer needed
 from models import PreSurveyNLP, SentimentAnalytics  # Keep for backwards compatibility with existing data
 from datetime import datetime
+from blockchain.vote_recorder import get_vote_recorder  # ✅ NEW: Blockchain integration
 
 app = Flask(__name__)
 
@@ -386,15 +387,73 @@ def cast_vote():
             flash("❌ You must vote for all required positions before submitting.", "danger")
             return redirect(url_for('cast_vote'))
 
+        # ✅ BLOCKCHAIN INTEGRATION: Initialize vote recorder
+        try:
+            vote_recorder = get_vote_recorder()
+            blockchain_enabled = True
+            print("🔗 Blockchain vote recorder initialized")
+        except Exception as e:
+            blockchain_enabled = False
+            print(f"⚠️  Blockchain unavailable: {str(e)}")
+
         for position, candidate_id in votes.items():
+            # STEP 1: Create vote record in local database
             vote = Vote(
                 voter_id=voter_id,
                 candidate_id=candidate_id,
-                position=position
+                position=position,
+                created_at=datetime.utcnow()
             )
             db.session.add(vote)
+            db.session.flush()  # Get vote.id for reference
+
+            # STEP 2: Record vote on Solana blockchain
+            if blockchain_enabled:
+                try:
+                    print(f"\n🔐 Recording {position} vote on blockchain...")
+                    blockchain_result = vote_recorder.record_vote_on_chain(
+                        voter_id=voter_id,
+                        candidate_id=candidate_id,
+                        position=position,
+                        halka=voter.halka
+                    )
+
+                    if blockchain_result['success']:
+                        # Update vote with blockchain data
+                        vote.blockchain_tx_signature = blockchain_result['signature']
+                        vote.blockchain_slot = blockchain_result['slot']
+                        vote.blockchain_timestamp = blockchain_result['timestamp']
+                        vote.voter_id_hash = blockchain_result['voter_hash']
+                        vote.encrypted_vote_data = blockchain_result['encrypted_data']
+                        vote.verification_receipt = blockchain_result['receipt']
+                        vote.is_verified_on_chain = True
+                        print(f"✅ {position} vote recorded on blockchain: {blockchain_result['signature'][:16]}...")
+                    else:
+                        # Blockchain failed but vote saved locally
+                        vote.is_verified_on_chain = False
+                        print(f"⚠️  {position} blockchain recording failed: {blockchain_result.get('error')}")
+                        flash(f"⚠️ Vote recorded locally. Blockchain verification pending for {position}.", "warning")
+                
+                except Exception as e:
+                    # Blockchain error - vote still valid in local DB
+                    vote.is_verified_on_chain = False
+                    print(f"❌ Blockchain error for {position}: {str(e)}")
+                    flash(f"⚠️ Vote recorded locally. Blockchain temporarily unavailable for {position}.", "warning")
+            else:
+                # Blockchain disabled - local vote only
+                vote.is_verified_on_chain = False
 
         db.session.commit()
+        
+        # Show success message with blockchain status
+        blockchain_count = Vote.query.filter_by(voter_id=voter_id, is_verified_on_chain=True).count()
+        if blockchain_count == len(votes):
+            flash(f"✅ All {len(votes)} votes recorded and verified on blockchain!", "success")
+        elif blockchain_count > 0:
+            flash(f"✅ {blockchain_count}/{len(votes)} votes verified on blockchain. Others recorded locally.", "info")
+        else:
+            flash(f"✅ All {len(votes)} votes recorded locally. Blockchain verification pending.", "info")
+        
         session['step'] = 'voted'
         return redirect(url_for('post_survey'))
 
@@ -444,9 +503,18 @@ def confirm_vote():
     if session.get('step') != 'post_done':
         return redirect(url_for('post_survey'))
 
-    vote = Vote.query.filter_by(voter_id=session['voter_id']).first()
+    # Get all votes for this voter (PM, MNA, MPA)
+    votes = Vote.query.filter_by(voter_id=session['voter_id']).all()
+    
+    # Calculate blockchain verification stats
+    total_votes = len(votes)
+    verified_votes = sum(1 for v in votes if v.is_verified_on_chain)
+    
     session['step'] = 'complete'
-    return render_template('confirm.html', user_vote=vote)
+    return render_template('confirm.html', 
+                         user_votes=votes,
+                         total_votes=total_votes,
+                         verified_votes=verified_votes)
 
 # ---------------------------
 # Run the App

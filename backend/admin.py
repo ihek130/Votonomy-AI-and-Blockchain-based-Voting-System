@@ -572,6 +572,63 @@ def refresh_analytics():
     return redirect(url_for('admin_bp.sentiment_analysis'))
 
 # ------------------------------
+# Blockchain Dashboard & Verification
+# ------------------------------
+@admin_bp.route('/blockchain/dashboard')
+@admin_login_required
+def blockchain_dashboard():
+    """Blockchain integration statistics and monitoring"""
+    from blockchain.vote_verifier import get_vote_verifier
+    
+    try:
+        verifier = get_vote_verifier()
+        stats = verifier.get_blockchain_stats()
+        
+        # Get recent blockchain votes
+        recent_votes = Vote.query.filter_by(
+            is_verified_on_chain=True
+        ).order_by(Vote.blockchain_timestamp.desc()).limit(10).all()
+        
+        return render_template('admin/blockchain_dashboard.html',
+                             stats=stats,
+                             recent_votes=recent_votes)
+    except Exception as e:
+        flash(f"❌ Blockchain dashboard error: {str(e)}", "danger")
+        return redirect(url_for('admin_bp.admin_dashboard'))
+
+@admin_bp.route('/blockchain/verify/<receipt_code>')
+@admin_login_required
+def verify_vote_receipt(receipt_code):
+    """Verify a vote using receipt code"""
+    from blockchain.vote_verifier import get_vote_verifier
+    
+    try:
+        verifier = get_vote_verifier()
+        result = verifier.verify_vote_by_receipt(receipt_code)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({
+            'verified': False,
+            'error': str(e)
+        })
+
+@admin_bp.route('/blockchain/audit-report')
+@admin_login_required
+def blockchain_audit_report():
+    """Generate blockchain audit report"""
+    from blockchain.vote_verifier import get_vote_verifier
+    
+    try:
+        verifier = get_vote_verifier()
+        report = verifier.generate_audit_report()
+        
+        return render_template('admin/blockchain_audit.html', report=report)
+    except Exception as e:
+        flash(f"❌ Audit report error: {str(e)}", "danger")
+        return redirect(url_for('admin_bp.blockchain_dashboard'))
+
+# ------------------------------
 # Download Voting Results
 # ------------------------------
 @admin_bp.route('/download-results', methods=['GET'])
