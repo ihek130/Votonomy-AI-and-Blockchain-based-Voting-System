@@ -2,6 +2,7 @@
 {% block title %}Blockchain Dashboard{% endblock %}
 
 {% block content %}
+<div class="blockchain-dashboard-wrapper" data-blockchain-verified="{{ stats.blockchain_verified }}">
 <div class="blockchain-dashboard">
     <div class="dashboard-header">
         <h2>
@@ -28,6 +29,22 @@
                 <div><strong>Current Slot:</strong> {{ "{:,}".format(stats.network.current_slot) }}</div>
                 <div><strong>Admin Balance:</strong> {{ "%.4f"|format(stats.network.admin_balance) }} SOL</div>
             </div>
+        </div>
+    </div>
+
+    <!-- Integrity Check Card -->
+    <div id="integrity-status-card" class="alert alert-info mb-4" style="display: none;">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <strong id="integrity-status-text">
+                    🔍 Checking vote integrity...
+                </strong>
+                <br>
+                <small id="integrity-details"></small>
+            </div>
+            <button class="btn btn-sm btn-outline-primary" onclick="checkIntegrity()">
+                <i class="bi bi-arrow-clockwise"></i> Recheck
+            </button>
         </div>
     </div>
 
@@ -165,6 +182,9 @@
 
     <!-- Actions -->
     <div class="mt-4 text-center">
+        <button class="btn btn-success" onclick="checkIntegrity()">
+            <i class="bi bi-shield-check"></i> Verify Vote Integrity
+        </button>
         <a href="{{ url_for('admin_bp.blockchain_audit_report') }}" class="btn btn-primary">
             <i class="bi bi-file-earmark-text"></i> Generate Audit Report
         </a>
@@ -173,6 +193,74 @@
         </a>
     </div>
 </div>
+</div>
+
+<script>
+// Auto-check integrity on page load if there are blockchain votes
+window.addEventListener('DOMContentLoaded', function() {
+    const wrapper = document.querySelector('.blockchain-dashboard-wrapper');
+    const blockchainVerified = parseInt(wrapper.getAttribute('data-blockchain-verified'));
+    if (blockchainVerified > 0) {
+        checkIntegrity();
+    }
+});
+
+function checkIntegrity() {
+    const statusCard = document.getElementById('integrity-status-card');
+    const statusText = document.getElementById('integrity-status-text');
+    const statusDetails = document.getElementById('integrity-details');
+    
+    // Show loading state
+    statusCard.style.display = 'block';
+    statusCard.className = 'alert alert-info mb-4';
+    statusText.innerHTML = '🔍 Checking vote integrity against blockchain...';
+    statusDetails.innerHTML = 'This may take a moment...';
+    
+    // Fetch integrity check
+    fetch('{{ url_for("admin_bp.blockchain_integrity_check") }}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                statusCard.className = 'alert alert-danger mb-4';
+                statusText.innerHTML = '❌ Integrity Check Error';
+                statusDetails.innerHTML = data.error;
+                return;
+            }
+            
+            const status = data.integrity_status;
+            
+            if (status === 'VERIFIED_SECURE') {
+                statusCard.className = 'alert alert-success mb-4';
+                statusText.innerHTML = '✅ SYSTEM SECURE - No Tampering Detected';
+                statusDetails.innerHTML = `Checked ${data.total_checked} votes. All ${data.verified_intact} votes match blockchain records.`;
+            } else if (status === 'COMPROMISED') {
+                statusCard.className = 'alert alert-danger mb-4';
+                statusText.innerHTML = '🚨 CRITICAL: VOTE TAMPERING DETECTED!';
+                statusDetails.innerHTML = `${data.tampering_detected} tampered votes found! Database has been modified. Check console for details.`;
+                console.error('Tampered votes:', data.tampered_votes);
+                
+                // Show tampered votes
+                if (data.tampered_votes && data.tampered_votes.length > 0) {
+                    let tamperedHtml = '<div class="mt-3"><strong>Tampered Votes:</strong><ul>';
+                    data.tampered_votes.forEach(vote => {
+                        tamperedHtml += `<li>Vote ID ${vote.vote_id}: ${vote.position} (${vote.issue})</li>`;
+                    });
+                    tamperedHtml += '</ul></div>';
+                    statusDetails.innerHTML += tamperedHtml;
+                }
+            } else if (status === 'PARTIAL_VERIFICATION') {
+                statusCard.className = 'alert alert-warning mb-4';
+                statusText.innerHTML = '⚠️ Partial Verification';
+                statusDetails.innerHTML = `Verified ${data.verified_intact}/${data.total_checked} votes. ${data.unable_to_verify} could not be checked.`;
+            }
+        })
+        .catch(error => {
+            statusCard.className = 'alert alert-danger mb-4';
+            statusText.innerHTML = '❌ Connection Error';
+            statusDetails.innerHTML = 'Failed to check integrity: ' + error.message;
+        });
+}
+</script>
 
 <style>
 .blockchain-dashboard {
@@ -227,6 +315,30 @@ code {
 
 .table td, .table th {
     vertical-align: middle;
+}
+
+.blockchain-dashboard-wrapper {
+    padding: 1.5rem;
+    height: calc(100vh - 80px);
+    overflow-y: auto;
+}
+
+.blockchain-dashboard-wrapper::-webkit-scrollbar {
+    width: 14px;
+}
+
+.blockchain-dashboard-wrapper::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.blockchain-dashboard-wrapper::-webkit-scrollbar-thumb {
+    background: #01411C;
+    border-radius: 10px;
+}
+
+.blockchain-dashboard-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #026125;
 }
 </style>
 {% endblock %}

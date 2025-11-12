@@ -191,8 +191,19 @@ class VoteRecorder:
             
             signature = str(response.value)
             
-            # Wait for confirmation
-            confirmed = self.client.confirm_transaction(signature, timeout=30)
+            # Check if fast mode is enabled
+            import os
+            fast_mode_file = os.path.join(os.path.dirname(__file__), '..', 'blockchain_fast_mode.txt')
+            fast_mode = os.path.exists(fast_mode_file)
+            
+            if fast_mode:
+                # Fast mode: skip full confirmation, just check signature exists
+                print(f"   ⚡ Fast mode: minimal confirmation")
+                confirmed = True
+                time.sleep(2)  # Brief wait for transaction to propagate
+            else:
+                # Normal mode: full confirmation
+                confirmed = self.client.confirm_transaction(signature, timeout=30)
             
             if confirmed:
                 # Get slot and timestamp

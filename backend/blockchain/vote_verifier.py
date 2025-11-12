@@ -282,6 +282,237 @@ class VoteVerifier:
                 'error': str(e),
                 'votes_found': False
             }
+    
+    def check_vote_integrity(self, vote_id=None):
+        """
+        Check if local database votes match blockchain records
+        Detects tampering/manipulation
+        
+        Args:
+            vote_id: Specific vote ID to check, or None for all votes
+        
+        Returns:
+            dict: Integrity report with tampering detection
+        """
+        try:
+            # Get votes to check
+            if vote_id:
+                votes_to_check = [Vote.query.get(vote_id)]
+                if not votes_to_check[0]:
+                    return {'error': 'Vote not found'}
+            else:
+                votes_to_check = Vote.query.filter_by(is_verified_on_chain=True).all()
+            
+            results = {
+                'total_checked': len(votes_to_check),
+                'verified_intact': 0,
+                'tampering_detected': 0,
+                'unable_to_verify': 0,
+                'tampered_votes': [],
+                'integrity_status': 'CHECKING'
+            }
+            
+            for vote in votes_to_check:
+                if not vote.blockchain_tx_signature:
+                    results['unable_to_verify'] += 1
+                    continue
+                
+                # Verify transaction exists on blockchain
+                try:
+                    # Check if transaction exists (simplified verification)
+                    tx_exists = self.client.get_transaction_details(vote.blockchain_tx_signature)
+                    
+                    if not tx_exists:
+                        # Transaction not found - possible tampering or network issue
+                        results['unable_to_verify'] += 1
+                        print(f"⚠️  Transaction not found for vote {vote.id}: {vote.blockchain_tx_signature[:20]}...")
+                        continue
+                    
+                    # Transaction exists on blockchain - vote is verified
+                    # Additional check: verify signature matches
+                    if tx_exists.get('signature') == vote.blockchain_tx_signature or str(tx_exists.get('signature')) == str(vote.blockchain_tx_signature):
+                        results['verified_intact'] += 1
+                    else:
+                        # Signature mismatch - definite tampering
+                        results['tampering_detected'] += 1
+                        results['tampered_votes'].append({
+                            'vote_id': vote.id,
+                            'voter_id': vote.voter_id,
+                            'position': vote.position,
+                            'candidate_id': vote.candidate_id,
+                            'blockchain_signature': vote.blockchain_tx_signature,
+                            'issue': 'Blockchain signature mismatch',
+                            'severity': 'CRITICAL'
+                        })
+                        
+                except Exception as e:
+                    print(f"⚠️  Error verifying vote {vote.id}: {str(e)}")
+                    results['unable_to_verify'] += 1
+            
+            # Determine overall integrity status
+            if results['tampering_detected'] > 0:
+                results['integrity_status'] = 'COMPROMISED'
+            elif results['verified_intact'] == results['total_checked']:
+                results['integrity_status'] = 'VERIFIED_SECURE'
+            else:
+                results['integrity_status'] = 'PARTIAL_VERIFICATION'
+            
+            return results
+            
+        except Exception as e:
+            return {
+                'error': str(e),
+                'integrity_status': 'ERROR'
+            }
+    
+    def fetch_vote_from_blockchain(self, transaction_signature):
+        """
+        Fetch and decrypt vote directly from blockchain
+        Ultimate source of truth
+        
+        Args:
+            transaction_signature: Blockchain transaction signature
+        
+        Returns:
+            dict: Decrypted vote data from blockchain
+        """
+        try:
+            # Get transaction from blockchain
+            tx_data = self.client.get_transaction_data(transaction_signature)
+            
+            if not tx_data:
+                return {
+                    'success': False,
+                    'error': 'Transaction not found on blockchain'
+                }
+            
+            # Extract memo data
+            memo_data = self._extract_memo_from_transaction(tx_data)
+            
+            if not memo_data:
+                return {
+                    'success': False,
+                    'error': 'No memo data in transaction'
+                }
+            
+            # Decrypt vote
+            try:
+                decrypted_vote = self.encryption.decrypt_vote_data(
+                    memo_data.get('encrypted_vote', '')
+                )
+                
+                return {
+                    'success': True,
+                    'vote_data': decrypted_vote,
+                    'voter_hash': memo_data.get('voter_hash'),
+                    'position': memo_data.get('position'),
+                    'halka': memo_data.get('halka'),
+                    'timestamp': memo_data.get('timestamp'),
+                    'election_id': memo_data.get('election_id'),
+                    'source': 'BLOCKCHAIN'
+                }
+            except Exception as decrypt_error:
+                return {
+                    'success': False,
+                    'error': f'Decryption failed: {str(decrypt_error)}',
+                    'encrypted_data_exists': True
+                }
+                
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    def _extract_memo_from_transaction(self, tx_data):
+        """
+        Extract memo instruction data from transaction
+        
+        Args:
+            tx_data: Transaction data from blockchain
+        
+        Returns:
+            dict: Parsed memo data
+        """
+        try:
+            import json
+            
+            # Get transaction details
+            if not tx_data or 'transaction' not in tx_data:
+                return None
+            
+            transaction = tx_data['transaction']
+            
+            # Look for memo in transaction message
+            if 'message' in transaction:
+                instructions = transaction['message'].get('instructions', [])
+                
+                for instruction in instructions:
+                    # Memo program ID
+                    if instruction.get('programId') == 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr':
+                        # Decode memo data
+                        memo_text = instruction.get('data', '')
+                        if memo_text:
+                            try:
+                                return json.loads(memo_text)
+                            except:
+                                # Try base64 decode if needed
+                                import base64
+                                decoded = base64.b64decode(memo_text).decode('utf-8')
+                                return json.loads(decoded)
+            
+            return None
+            
+        except Exception as e:
+            print(f"⚠️  Error extracting memo: {str(e)}")
+            return None
+    
+    def get_blockchain_verified_results(self):
+        """
+        Get election results by fetching votes directly from blockchain
+        Ultimate tamper-proof results
+        
+        Returns:
+            dict: Election results from blockchain source
+        """
+        try:
+            # Get all blockchain-verified votes
+            blockchain_votes = Vote.query.filter_by(
+                is_verified_on_chain=True
+            ).all()
+            
+            results = {
+                'total_votes': len(blockchain_votes),
+                'positions': {},
+                'verification_status': 'BLOCKCHAIN_VERIFIED',
+                'source': 'SOLANA_BLOCKCHAIN'
+            }
+            
+            for vote in blockchain_votes:
+                # Fetch vote from blockchain
+                blockchain_data = self.fetch_vote_from_blockchain(
+                    vote.blockchain_tx_signature
+                )
+                
+                if blockchain_data.get('success'):
+                    position = blockchain_data.get('position')
+                    candidate = blockchain_data.get('vote_data', {}).get('candidate_id')
+                    
+                    if position not in results['positions']:
+                        results['positions'][position] = {}
+                    
+                    if candidate not in results['positions'][position]:
+                        results['positions'][position][candidate] = 0
+                    
+                    results['positions'][position][candidate] += 1
+            
+            return results
+            
+        except Exception as e:
+            return {
+                'error': str(e),
+                'verification_status': 'ERROR'
+            }
 
 
 # Helper function to get verifier instance

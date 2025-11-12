@@ -613,6 +613,23 @@ def verify_vote_receipt(receipt_code):
             'error': str(e)
         })
 
+@admin_bp.route('/blockchain/integrity-check')
+@admin_login_required
+def blockchain_integrity_check():
+    """Check vote integrity against blockchain"""
+    from blockchain.vote_verifier import get_vote_verifier
+    
+    try:
+        verifier = get_vote_verifier()
+        results = verifier.check_vote_integrity()
+        
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'integrity_status': 'ERROR'
+        })
+
 @admin_bp.route('/blockchain/audit-report')
 @admin_login_required
 def blockchain_audit_report():

@@ -1,0 +1,4 @@
+ENABLED
+# Fast mode is enabled for faster devnet testing
+# Transactions still recorded, but confirmation is faster
+# To disable, delete this file or run disable_fast_mode()

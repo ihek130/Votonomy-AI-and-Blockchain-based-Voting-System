@@ -2,6 +2,7 @@
 {% block title %}Blockchain Audit Report{% endblock %}
 
 {% block content %}
+<div class="audit-report-wrapper">
 <div class="audit-report-container">
     <div class="report-header text-center mb-5">
         <h1><i class="bi bi-file-earmark-check"></i> Blockchain Audit Report</h1>
@@ -157,6 +158,7 @@
         </a>
     </div>
 </div>
+</div>
 
 <style>
 .audit-report-container {
@@ -196,10 +198,38 @@
     margin: 0;
 }
 
+.audit-report-wrapper {
+    padding: 1.5rem;
+    height: calc(100vh - 80px);
+    overflow-y: auto;
+}
+
+.audit-report-wrapper::-webkit-scrollbar {
+    width: 14px;
+}
+
+.audit-report-wrapper::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.audit-report-wrapper::-webkit-scrollbar-thumb {
+    background: #01411C;
+    border-radius: 10px;
+}
+
+.audit-report-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #026125;
+}
+
 @media print {
     .btn, .card-header {
         print-color-adjust: exact;
         -webkit-print-color-adjust: exact;
+    }
+    .audit-report-wrapper {
+        height: auto;
+        overflow: visible;
     }
 }
 </style>

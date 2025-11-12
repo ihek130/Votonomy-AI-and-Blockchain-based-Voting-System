@@ -32,9 +32,13 @@ ADMIN_WALLET_PATH = WALLETS_DIR / "admin_keypair.json"
 ENCRYPTION_KEY_PATH = KEYS_DIR / "vote_encryption.key"
 
 # Blockchain settings
-CONFIRMATION_TIMEOUT = 60  # seconds
-MAX_RETRY_ATTEMPTS = 3
+CONFIRMATION_TIMEOUT = 30  # seconds (reduced for faster feedback)
+MAX_RETRY_ATTEMPTS = 2
 TRANSACTION_FEE_PAYER = "admin"  # Who pays transaction fees
+
+# Performance optimization
+SKIP_FULL_CONFIRMATION = False  # Set True for faster devnet (assumes transaction succeeds)
+USE_ASYNC_RECORDING = False  # Experimental: parallel blockchain recording
 
 # Election configuration
 ELECTION_ID = "2025-GENERAL-ELECTION"
