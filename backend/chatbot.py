@@ -6,13 +6,18 @@ import requests
 from langdetect import detect
 from sentence_transformers import SentenceTransformer, util
 import re
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 chatbot_bp = Blueprint('chatbot', __name__)
 
-# === Groq API (FREE & FAST)
-GROQ_API_KEY = "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"
-GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL = "llama-3.1-8b-instant"  # Fast and efficient model
+# === Groq API Configuration (from .env file)
+GROQ_API_KEY = os.getenv('GROQ_API_KEY')
+GROQ_API_URL = os.getenv('GROQ_API_URL', 'https://api.groq.com/openai/v1/chat/completions')
+GROQ_MODEL = os.getenv('GROQ_MODEL', 'llama-3.1-8b-instant')
 
 # Enhanced FAQ for Votonomy-specific questions
 faq_questions = [
@@ -55,7 +60,7 @@ faq_answers = [
     "Pakistan's national symbols include the crescent and star flag (green and white), the national anthem 'Qaumi Taranah', and the national flower Jasmine."
 ]
 
-model = SentenceTransformer('all-MiniLM-L6-v2')
+model = SentenceTransformer('your_sentence_Model')
 # ✅ Generate embeddings after FAQ questions are defined
 faq_embeddings = model.encode(faq_questions, convert_to_tensor=True)
 

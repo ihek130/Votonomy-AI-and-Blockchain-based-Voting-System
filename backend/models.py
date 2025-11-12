@@ -46,6 +46,16 @@ class Vote(db.Model):
     voter_id = db.Column(db.String(100), nullable=False)
     candidate_id = db.Column(db.String(100), nullable=False)
     position = db.Column(db.String(100))
+    
+    # ✅ Blockchain Integration Fields
+    blockchain_tx_signature = db.Column(db.String(200), unique=True, nullable=True)  # Solana transaction signature
+    blockchain_slot = db.Column(db.BigInteger, nullable=True)                        # Block slot number
+    blockchain_timestamp = db.Column(db.DateTime, nullable=True)                     # On-chain timestamp
+    voter_id_hash = db.Column(db.String(64), nullable=True)                         # SHA-256 hash for anonymity
+    encrypted_vote_data = db.Column(db.Text, nullable=True)                         # AES-256 encrypted payload
+    verification_receipt = db.Column(db.String(500), nullable=True)                 # Voter receipt code
+    is_verified_on_chain = db.Column(db.Boolean, default=False)                     # Blockchain verification status
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)                    # Local timestamp
 
 class Admin(db.Model):
     id = db.Column(db.Integer, primary_key=True)
