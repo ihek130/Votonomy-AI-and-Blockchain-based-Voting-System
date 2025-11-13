@@ -1,0 +1,242 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Fraud Detection Dashboard - Votonomy Admin{% endblock %}
+
+{% block content %}
+<style>
+  .red-flags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    max-width: 350px;
+  }
+  .red-flags-list .badge {
+    background-color: #ff9800;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+  }
+  .red-flags-list .badge i {
+    margin-right: 3px;
+  }
+</style>
+
+<div class="dashboard-header">
+  <h2><i class="fas fa-shield-alt"></i> AI Fraud Detection Dashboard</h2>
+  <p class="text-muted">Real-time monitoring of voting anomalies and suspicious patterns</p>
+</div>
+
+<!-- Summary Cards -->
+<div class="stats-grid">
+  <div class="stat-card stat-card-danger">
+    <div class="stat-icon">
+      <i class="fas fa-exclamation-triangle"></i>
+    </div>
+    <div class="stat-content">
+      <h3>{{ stats.critical_alerts }}</h3>
+      <p>Critical Alerts</p>
+    </div>
+  </div>
+
+  <div class="stat-card stat-card-warning">
+    <div class="stat-icon">
+      <i class="fas fa-exclamation-circle"></i>
+    </div>
+    <div class="stat-content">
+      <h3>{{ stats.high_alerts }}</h3>
+      <p>High Risk Alerts</p>
+    </div>
+  </div>
+
+  <div class="stat-card stat-card-info">
+    <div class="stat-icon">
+      <i class="fas fa-eye"></i>
+    </div>
+    <div class="stat-content">
+      <h3>{{ stats.pending_alerts }}</h3>
+      <p>Pending Review</p>
+    </div>
+  </div>
+
+  <div class="stat-card stat-card-success">
+    <div class="stat-icon">
+      <i class="fas fa-check-circle"></i>
+    </div>
+    <div class="stat-content">
+      <h3>{{ stats.resolved_alerts }}</h3>
+      <p>Resolved</p>
+    </div>
+  </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="action-buttons">
+  <form action="{{ url_for('admin_bp.retrain_fraud_model') }}" method="POST" class="d-inline">
+    <button type="submit" class="btn-action btn-primary">
+      <i class="fas fa-brain"></i> Retrain AI Model
+    </button>
+  </form>
+  
+  <form action="{{ url_for('admin_bp.analyze_fraud_patterns') }}" method="POST" class="d-inline">
+    <button type="submit" class="btn-action btn-secondary">
+      <i class="fas fa-search"></i> Analyze Patterns
+    </button>
+  </form>
+</div>
+
+<!-- Alerts Table -->
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-list"></i> Recent Fraud Alerts</h3>
+    <span class="badge-total">{{ alerts|length }} Total</span>
+  </div>
+
+  <div class="table-scroll-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Voter</th>
+          <th>Risk Score</th>
+          <th>Severity</th>
+          <th>Rejection Reasons</th>
+          <th>Status</th>
+          <th>Detected At</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if alerts %}
+          {% for alert in alerts %}
+          <tr class="alert-row alert-row-{{ alert.severity }}">
+            <td class="text-monospace">#{{ alert.id }}</td>
+            <td>
+              <div class="voter-info">
+                <strong>{{ alert.voter.name }}</strong>
+                <small class="text-muted d-block">{{ alert.voter.cnic }}</small>
+              </div>
+            </td>
+            <td>
+              <div class="risk-score-container">
+                <div class="risk-score-bar">
+                  <div class="risk-score-fill risk-score-fill-{{ alert.severity }}" style="width: {{ alert.risk_score }}%"></div>
+                </div>
+                <span class="risk-score-value">{{ "%.1f"|format(alert.risk_score) }}%</span>
+              </div>
+            </td>
+            <td>
+              <span class="badge-severity badge-severity-{{ alert.severity }}">
+                {{ alert.severity|upper }}
+              </span>
+            </td>
+            <td>
+              <div class="red-flags-list">
+                {% if alert.red_flags %}
+                  {% for flag in alert.red_flags[:3] %}
+                    <span class="badge badge-warning">
+                      <i class="fas fa-exclamation-triangle"></i> {{ flag }}
+                    </span>
+                  {% endfor %}
+                  {% if alert.red_flags|length > 3 %}
+                    <small class="text-muted" style="display: block; margin-top: 4px;">
+                      +{{ alert.red_flags|length - 3 }} more reasons
+                    </small>
+                  {% endif %}
+                {% else %}
+                  <span class="text-muted" style="font-size: 0.85rem;">No flags</span>
+                {% endif %}
+              </div>
+            </td>
+            <td>
+              <span class="badge-status badge-status-{{ alert.status }}">
+                {{ alert.status|replace('_', ' ')|title }}
+              </span>
+            </td>
+            <td class="text-muted">{{ alert.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>
+              <a href="{{ url_for('admin_bp.fraud_alert_detail', alert_id=alert.id) }}" class="btn-icon btn-icon-primary" title="View Details">
+                <i class="fas fa-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="8" class="text-center text-muted empty-state">
+              <i class="fas fa-shield-alt fa-3x mb-3"></i>
+              <p>No fraud alerts detected yet. System is monitoring all activity.</p>
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Pattern Analysis Results -->
+{% if pattern_results %}
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-chart-network"></i> Pattern Analysis Results</h3>
+  </div>
+  <div class="table-scroll-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Candidate</th>
+          <th>Time Window</th>
+          <th>Vote Count</th>
+          <th>Risk Score</th>
+          <th>Red Flags</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for result in pattern_results %}
+        <tr class="alert-row alert-row-{{ result.severity }}">
+          <td><strong>{{ result.candidate_name }}</strong></td>
+          <td class="text-muted">{{ result.time_window }}</td>
+          <td>{{ result.vote_count }} votes</td>
+          <td>
+            <div class="risk-score-container">
+              <div class="risk-score-bar">
+                <div class="risk-score-fill risk-score-fill-{{ result.severity }}" style="width: {{ result.risk_score }}%"></div>
+              </div>
+              <span class="risk-score-value">{{ "%.1f"|format(result.risk_score) }}%</span>
+            </div>
+          </td>
+          <td>
+            <span class="badge-count badge-count-{{ result.severity }}">
+              {{ result.red_flags|length }}
+            </span>
+          </td>
+          <td>
+            <span class="badge-severity badge-severity-{{ result.severity }}">
+              {{ result.severity|upper }}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-messages">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+{% endblock %}

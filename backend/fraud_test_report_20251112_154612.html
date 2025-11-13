@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraud Detection Test Report - Votonomy</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #006600, #008000);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .timestamp {
+            background: rgba(255,255,255,0.1);
+            padding: 10px 20px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .metric-card.success {
+            background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%);
+        }
+        
+        .metric-card.warning {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+        }
+        
+        .metric-card.danger {
+            background: linear-gradient(135deg, #ff7979 0%, #eb4d4b 100%);
+            color: white;
+        }
+        
+        .metric-card.info {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            color: white;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .metric-value {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .metric-subtitle {
+            font-size: 0.85rem;
+            opacity: 0.7;
+        }
+        
+        .chart-section {
+            margin-bottom: 40px;
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+        }
+        
+        .chart-section h2 {
+            color: #006600;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 20px;
+        }
+        
+        .grade-section {
+            background: linear-gradient(135deg, #006600, #008000);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .grade-letter {
+            font-size: 6rem;
+            font-weight: bold;
+            margin: 20px 0;
+            text-shadow: 3px 3px 10px rgba(0,0,0,0.3);
+        }
+        
+        .grade-description {
+            font-size: 1.3rem;
+            opacity: 0.9;
+        }
+        
+        .recommendations {
+            background: #fff3cd;
+            padding: 30px;
+            border-radius: 15px;
+            border-left: 5px solid #ffc107;
+        }
+        
+        .recommendations h3 {
+            color: #856404;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        
+        .recommendations ul {
+            list-style: none;
+        }
+        
+        .recommendations li {
+            padding: 10px 0;
+            color: #856404;
+            font-size: 1.1rem;
+        }
+        
+        .recommendations li:before {
+            content: "💡 ";
+            margin-right: 10px;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 30px;
+            background: #f8f9fa;
+            color: #666;
+        }
+        
+        .scenario-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .scenario-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        
+        .scenario-card h4 {
+            color: #006600;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .scenario-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .scenario-stat:last-child {
+            border-bottom: none;
+        }
+        
+        .stat-label {
+            color: #666;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ Fraud Detection Test Report</h1>
+            <p>Votonomy AI-Powered Security System</p>
+            <div class="timestamp" id="timestamp"></div>
+        </div>
+        
+        <div class="content">
+            <!-- Key Metrics -->
+            <div class="metrics-grid">
+                <div class="metric-card success">
+                    <div class="metric-label">Overall Accuracy</div>
+                    <div class="metric-value" id="overallAccuracy">--</div>
+                    <div class="metric-subtitle">Detection Rate</div>
+                </div>
+                
+                <div class="metric-card danger">
+                    <div class="metric-label">Fraud Detection</div>
+                    <div class="metric-value" id="fraudDetection">--</div>
+                    <div class="metric-subtitle">Threats Caught</div>
+                </div>
+                
+                <div class="metric-card info">
+                    <div class="metric-label">False Positives</div>
+                    <div class="metric-value" id="falsePositives">--</div>
+                    <div class="metric-subtitle">Legitimate Flagged</div>
+                </div>
+                
+                <div class="metric-card warning">
+                    <div class="metric-label">Total Tests</div>
+                    <div class="metric-value" id="totalTests">--</div>
+                    <div class="metric-subtitle">Simulations Run</div>
+                </div>
+            </div>
+            
+            <!-- Performance Grade -->
+            <div class="grade-section">
+                <h2>Performance Grade</h2>
+                <div class="grade-letter" id="gradeLetter">A+</div>
+                <div class="grade-description" id="gradeDescription">Excellent Performance</div>
+            </div>
+            
+            <!-- Charts -->
+            <div class="chart-section">
+                <h2>📊 Detection Breakdown</h2>
+                <div class="chart-container">
+                    <canvas id="detectionChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-section">
+                <h2>📈 Accuracy Metrics</h2>
+                <div class="chart-container">
+                    <canvas id="accuracyChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Scenario Results -->
+            <div class="chart-section">
+                <h2>🎯 Scenario Results</h2>
+                <div class="scenario-grid" id="scenarioGrid">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <!-- Recommendations -->
+            <div class="recommendations">
+                <h3>💡 Recommendations</h3>
+                <ul id="recommendationsList">
+                    <!-- Will be populated by JavaScript -->
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Generated by Votonomy Fraud Detection System</p>
+            <p style="margin-top: 10px; font-size: 0.9rem;">Powered by Isolation Forest ML & Multi-Factor Pattern Detection</p>
+        </div>
+    </div>
+    
+    <script>
+        // This will be populated by Python script
+        const testResults = {
+            timestamp: new Date().toLocaleString(),
+            overallAccuracy: 0,
+            fraudDetectionRate: 0,
+            falsePositiveRate: 0,
+            totalTests: 0,
+            legitimateCorrect: 0,
+            legitimateFlagged: 0,
+            fraudDetected: 0,
+            fraudMissed: 0,
+            scenarios: [],
+            recommendations: []
+        };
+        
+        function initializeReport(data) {
+            // Update timestamp
+            document.getElementById('timestamp').textContent = data.timestamp;
+            
+            // Update metrics
+            document.getElementById('overallAccuracy').textContent = data.overallAccuracy.toFixed(1) + '%';
+            document.getElementById('fraudDetection').textContent = data.fraudDetectionRate.toFixed(1) + '%';
+            document.getElementById('falsePositives').textContent = data.falsePositiveRate.toFixed(1) + '%';
+            document.getElementById('totalTests').textContent = data.totalTests;
+            
+            // Update grade
+            let grade, description;
+            if (data.overallAccuracy >= 95) {
+                grade = 'A+';
+                description = 'Excellent Performance';
+            } else if (data.overallAccuracy >= 90) {
+                grade = 'A';
+                description = 'Very Good Performance';
+            } else if (data.overallAccuracy >= 85) {
+                grade = 'B+';
+                description = 'Good Performance';
+            } else if (data.overallAccuracy >= 80) {
+                grade = 'B';
+                description = 'Fair Performance';
+            } else {
+                grade = 'C';
+                description = 'Needs Improvement';
+            }
+            
+            document.getElementById('gradeLetter').textContent = grade;
+            document.getElementById('gradeDescription').textContent = description;
+            
+            // Create charts
+            createDetectionChart(data);
+            createAccuracyChart(data);
+            
+            // Populate scenarios
+            populateScenarios(data.scenarios);
+            
+            // Populate recommendations
+            populateRecommendations(data.recommendations);
+        }
+        
+        function createDetectionChart(data) {
+            const ctx = document.getElementById('detectionChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Fraud Detected', 'Fraud Missed', 'Legitimate Pass', 'False Positives'],
+                    datasets: [{
+                        data: [
+                            data.fraudDetected,
+                            data.fraudMissed,
+                            data.legitimateCorrect,
+                            data.legitimateFlagged
+                        ],
+                        backgroundColor: [
+                            '#28a745',
+                            '#dc3545',
+                            '#17a2b8',
+                            '#ffc107'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+        
+        function createAccuracyChart(data) {
+            const ctx = document.getElementById('accuracyChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Overall Accuracy', 'Fraud Detection', 'Legitimate Pass', 'False Positives', 'False Negatives'],
+                    datasets: [{
+                        label: 'Percentage',
+                        data: [
+                            data.overallAccuracy,
+                            data.fraudDetectionRate,
+                            100 - data.falsePositiveRate,
+                            data.falsePositiveRate,
+                            (data.fraudMissed / (data.fraudDetected + data.fraudMissed) * 100) || 0
+                        ],
+                        backgroundColor: [
+                            '#006600',
+                            '#dc3545',
+                            '#28a745',
+                            '#ffc107',
+                            '#ff6b6b'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+        
+        function populateScenarios(scenarios) {
+            const grid = document.getElementById('scenarioGrid');
+            scenarios.forEach(scenario => {
+                const card = document.createElement('div');
+                card.className = 'scenario-card';
+                card.innerHTML = `
+                    <h4>${scenario.name}</h4>
+                    <div class="scenario-stat">
+                        <span class="stat-label">Tests Run</span>
+                        <span class="stat-value">${scenario.count}</span>
+                    </div>
+                    <div class="scenario-stat">
+                        <span class="stat-label">Detection Rate</span>
+                        <span class="stat-value">${scenario.detectionRate}%</span>
+                    </div>
+                    <div class="scenario-stat">
+                        <span class="stat-label">Status</span>
+                        <span class="stat-value">${scenario.status}</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+        
+        function populateRecommendations(recommendations) {
+            const list = document.getElementById('recommendationsList');
+            recommendations.forEach(rec => {
+                const li = document.createElement('li');
+                li.textContent = rec;
+                list.appendChild(li);
+            });
+        }
+        
+        // Example data - will be replaced by actual test results
+        window.addEventListener('DOMContentLoaded', () => {
+            // This would normally be populated by the Python script
+            // For now, using placeholder data
+            const actualData = {"timestamp": "2025-11-12 15:46:12", "overallAccuracy": 61.53846153846154, "fraudDetectionRate": 0.0, "falsePositiveRate": 0.0, "totalTests": 91, "legitimateCorrect": 56, "legitimateFlagged": 0, "fraudDetected": 0, "fraudMissed": 35, "scenarios": [{"name": "\ud83d\udcca Legitimate Voters", "count": 50, "detectionRate": "112.0", "status": "Pass"}, {"name": "\ud83e\udd16 Bot Detection", "count": 20, "detectionRate": "0.0", "status": "Review"}, {"name": "\ud83c\udfaf Coordinated Attack", "count": 15, "detectionRate": "85.0", "status": "Pass"}, {"name": "\ud83d\udc68\u200d\ud83d\udc69\u200d\ud83d\udc67\u200d\ud83d\udc66 Family Voting", "count": 6, "detectionRate": "100.0", "status": "Pass"}], "recommendations": ["\u2705 False positive rate is within acceptable range (<10%)", "\u26a0\ufe0f Fraud detection rate below target - strengthen detection rules", "\ud83d\udca1 Consider retraining model after collecting more real-world data", "\ud83d\udca1 Monitor coordinated attack detection during peak voting hours"]};
+        const sampleData = {
+                timestamp: new Date().toLocaleString(),
+                overallAccuracy: 92.5,
+                fraudDetectionRate: 88.6,
+                falsePositiveRate: 5.4,
+                totalTests: 91,
+                legitimateCorrect: 53,
+                legitimateFlagged: 3,
+                fraudDetected: 31,
+                fraudMissed: 4,
+                scenarios: [
+                    { name: '📊 Legitimate Voters', count: 50, detectionRate: '94.0', status: 'Pass' },
+                    { name: '🤖 Bot Detection', count: 20, detectionRate: '90.0', status: 'Pass' },
+                    { name: '🎯 Coordinated Attack', count: 15, detectionRate: '86.7', status: 'Pass' },
+                    { name: '👨‍👩‍👧‍👦 Family Voting', count: 6, detectionRate: '100', status: 'Pass' }
+                ],
+                recommendations: [
+                    'System performing well - ready for production deployment',
+                    'False positive rate is within acceptable range (<10%)',
+                    'Consider retraining model after collecting more real-world data',
+                    'Monitor coordinated attack detection during peak voting hours'
+                ]
+            };
+            
+            initializeReport(actualData);
+        });
+    </script>
+</body>
+</html>

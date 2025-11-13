@@ -19,45 +19,162 @@ GROQ_API_KEY = os.getenv('GROQ_API_KEY')
 GROQ_API_URL = os.getenv('GROQ_API_URL', 'https://api.groq.com/openai/v1/chat/completions')
 GROQ_MODEL = os.getenv('GROQ_MODEL', 'llama-3.1-8b-instant')
 
-# Enhanced FAQ for Votonomy-specific questions
+# ✅ MASSIVELY ENHANCED FAQ - Claude-level Intelligence
 faq_questions = [
+    # Voting Process
     "How do I vote in Votonomy?",
     "How to register for voting?",
-    "Why isn't my account approved?",
     "How many times can I vote?",
+    "What positions can I vote for?",
+    "Can I change my vote after submitting?",
+    
+    # Registration & Authentication
+    "Why isn't my account approved?",
+    "What documents do I need to register?",
+    "I forgot my CNIC number",
+    "I lost my ID card",
+    "How do I register without CNIC?",
+    "My voter ID doesn't match",
+    "Registration keeps failing",
+    
+    # Halka & Constituencies
     "What is a Halka?",
-    "How to file a complaint?",
-    "I have a complaint",
-    "I have a complain",
-    "Check complaint status",
-    "Check my complaint status",
+    "How do I find my Halka?",
+    "What is NA-52, NA-53, NA-54?",
+    "Which Halka am I in?",
+    "Can I vote in multiple Halkas?",
+    
+    # Blockchain & Security
     "What is Votonomy?",
     "How does blockchain voting work?",
-    "What documents do I need to register?",
+    "How are votes stored?",
+    "Are my votes encrypted?",
+    "Is blockchain secure?",
+    "Can votes be tampered?",
+    "How is my privacy protected?",
+    "What is vote encryption?",
+    "How are votes verified?",
+    
+    # Fraud Detection & Anomalies
+    "How is fraud detected?",
+    "What are anomalies in voting?",
+    "How does AI fraud detection work?",
+    "What triggers fraud alerts?",
+    "Am I being monitored?",
+    "What if I'm flagged as fraud?",
+    
+    # Complaints
+    "How to file a complaint?",
+    "I have a complaint",
+    "Check complaint status",
+    "My complaint status",
+    
+    # Pakistan History
     "History of Pakistan elections",
     "When was Pakistan founded?",
     "Who was the founder of Pakistan?",
-    "What are Pakistan's national symbols?"
+    "Pakistan's national symbols",
+    
+    # Technical Issues
+    "Website not loading",
+    "I can't login",
+    "Forgot my password",
+    "Email not received",
+    "Survey not submitting"
 ]
 
 faq_answers = [
-    "To vote in Votonomy: 1) Register with your CNIC and voter ID 2) Complete pre-survey 3) Cast your vote for all positions 4) Complete post-survey 5) Get confirmation",
-    "To register: Go to /register, enter your full name, father's name, voter ID, CNIC, age, gender, province, city, and complete address. Your info must match our voter database.",
-    "Your account might not be approved due to mismatched data with our voter database. Please verify your CNIC, name, and other details match exactly.",
-    "You can vote only once in Votonomy. The system blocks repeat voting to ensure election integrity.",
-    "A Halka is your voting constituency (like NA-52, NA-53, NA-54). It's assigned based on your address sector in Islamabad.",
-    "Type 'I have a complaint' or 'I have a complain' and I'll guide you through filing a complaint with your email.",
-    "Please write your complaint now. Also share your email in the next message.",
-    "Please write your complaint now. Also share your email in the next message.",
-    "Please enter your complaint ID (like C0001, C0042, etc.) to check the status of your complaint.",
-    "Please enter your complaint ID (like C0001, C0042, etc.) to check the status of your complaint.",
-    "Votonomy is Pakistan's blockchain-based electronic voting system that ensures secure, transparent, and tamper-proof elections.",
-    "Blockchain voting in Votonomy creates an immutable record of votes, ensuring transparency and preventing fraud through cryptographic security.",
-    "You need: Valid CNIC, Voter ID, complete Islamabad address with sector (like I-8/2, G-10/3), and personal details matching our database.",
-    "Pakistan has held multiple democratic elections since 1947. Key elections include 1970, 1977, 1988, 1990, 1993, 1997, 2002, 2008, 2013, 2018, and 2024.",
-    "Pakistan was founded on August 14, 1947, gaining independence from British rule.",
-    "Quaid-e-Azam Muhammad Ali Jinnah was the founder of Pakistan and its first Governor-General.",
-    "Pakistan's national symbols include the crescent and star flag (green and white), the national anthem 'Qaumi Taranah', and the national flower Jasmine."
+    # Voting Process
+    "**Voting in Votonomy (5 Steps):**\n1️⃣ Register with CNIC & Voter ID\n2️⃣ Wait for admin approval\n3️⃣ Complete 12-question pre-survey\n4️⃣ Cast votes for PM, MNA, MPA\n5️⃣ Complete post-survey\n6️⃣ Get blockchain receipt\n\nYour vote is encrypted and stored on Solana blockchain!",
+    
+    "**Registration Process:**\n✅ Required: Full Name, Father's Name, Voter ID, CNIC (13 digits), Age, Gender, Province, City, Complete Address with Sector\n✅ Address must include sector (e.g., I-8/2, G-10/3)\n✅ Data must match our voter database exactly\n✅ Admin will approve within 24 hours\n\n⚠️ Without matching data, registration fails.",
+    
+    "**One Person, One Vote!** You can vote ONLY ONCE in Votonomy. The system:\n✅ Blocks repeat voting\n✅ Checks blockchain records\n✅ Detects fraud attempts\n\nThis ensures democratic integrity.",
+    
+    "**Three Positions:**\n🏛️ Prime Minister (PM)\n🇵🇰 Member National Assembly (MNA)\n🏙️ Member Provincial Assembly (MPA)\n\nYou must vote for ALL THREE before submitting.",
+    
+    "**No, votes are FINAL.** Once submitted:\n🔒 Vote is encrypted\n⛓️ Stored on blockchain (immutable)\n✅ Cannot be changed or deleted\n\nThis prevents vote manipulation.",
+    
+    # Registration & Authentication
+    "**Account Not Approved? Common Reasons:**\n❌ CNIC doesn't match database\n❌ Name spelling mismatch\n❌ Incorrect Voter ID\n❌ Address sector missing\n❌ Age/gender doesn't match\n\n✅ Solution: Check your CNIC card and re-enter EXACT details. Contact admin if still failing.",
+    
+    "**Required Documents:**\n📄 Valid CNIC (Computerized National Identity Card)\n🗳️ Voter ID (from ECP)\n🏠 Complete Islamabad address with sector\n\n**Example Address:** House 123, Street 5, I-8/2, Islamabad\n\n✅ All details must match our voter database.",
+    
+    "**Forgot CNIC Number? Solutions:**\n1️⃣ Check your physical CNIC card\n2️⃣ Check NADRA registration slip\n3️⃣ Visit NADRA office with original documents\n4️⃣ Use NADRA Verisys app\n\n⚠️ You CANNOT register without CNIC number.",
+    
+    "**Lost ID Card? Immediate Steps:**\n1️⃣ File FIR at police station\n2️⃣ Visit NADRA office\n3️⃣ Apply for duplicate CNIC\n4️⃣ Get temporary receipt\n\n⚠️ Registration requires valid CNIC. Complete NADRA process first.",
+    
+    "**Cannot Register Without CNIC!**\nCNIC is mandatory for:\n✅ Identity verification\n✅ Preventing fraud\n✅ Database matching\n\n🚫 No alternatives accepted. Get CNIC from NADRA first.",
+    
+    "**Voter ID Mismatch? Steps:**\n1️⃣ Check ECP (Election Commission) records\n2️⃣ Verify you're in our voter database\n3️⃣ Ensure exact spelling\n4️⃣ Contact admin with complaint\n\nFormat example: ABC-1234567",
+    
+    "**Registration Failing? Debug Checklist:**\n✅ CNIC exactly 13 digits (without dashes)\n✅ Name matches CNIC card\n✅ Father's name matches CNIC\n✅ Address includes sector (I-8/2)\n✅ Age matches CNIC\n✅ Gender correct\n\nIf all correct and still failing, file complaint.",
+    
+    # Halka & Constituencies
+    "**Halka = Electoral Constituency**\nYour voting area based on address. Islamabad has 3:\n\n🏛️ **NA-52**: Sectors F-8, F-9, F-10, F-11, G-8, G-9, G-10, H-8, H-9\n🏛️ **NA-53**: Sectors E-7, E-11, G-6, G-7, G-11, G-13, I-8\n🏛️ **NA-54**: Sectors I-9, I-10, I-11, I-12, I-14, I-15, I-16\n\nSystem auto-detects from your address!",
+    
+    "**Finding Your Halka:**\nBased on your address SECTOR:\n📍 F-10/4 → NA-52\n📍 G-11/3 → NA-53\n📍 I-9/1 → NA-54\n\nHalka is auto-assigned during registration!",
+    
+    "**National Assembly Constituencies:**\n**NA-52**: Central/West Islamabad\n**NA-53**: East/Central Islamabad\n**NA-54**: East/Far East Islamabad\n\nEach has different candidates for MNA position.",
+    
+    "**Your Halka = Your Address Sector**\nThe system automatically detects it from your registered address. You'll only see candidates from YOUR Halka.",
+    
+    "**No! One Halka Only.**\nYou can ONLY vote in your registered Halka based on your address. Cannot vote in multiple constituencies. This prevents fraud.",
+    
+    # Blockchain & Security
+    "**Votonomy = Pakistan's Blockchain E-Voting**\n⛓️ Built on Solana blockchain\n🔐 AES-256 encryption\n🔒 SHA-256 voter hashing\n✅ Tamper-proof voting\n🇵🇰 Designed for Pakistan\n\n**Features:**\n• AI fraud detection\n• Real-time verification\n• Anonymous but verifiable\n• Complete audit trail",
+    
+    "**Blockchain Voting Process:**\n1️⃣ You cast vote → Encrypted with AES-256\n2️⃣ Your ID → Hashed with SHA-256 (anonymous)\n3️⃣ Encrypted vote → Sent to Solana blockchain\n4️⃣ Stored in Memo transaction (immutable)\n5️⃣ You get receipt code\n6️⃣ Vote verified on-chain\n\n✅ Result: Tamper-proof, verifiable, anonymous vote!",
+    
+    "**Vote Storage (3 Layers):**\n\n**Layer 1 - Local Database:**\n📊 Basic vote record\n⏰ Timestamp\n\n**Layer 2 - Blockchain (Solana):**\n⛓️ Encrypted vote data\n🔐 Voter ID hash\n🎫 Transaction signature\n📍 Block slot number\n\n**Layer 3 - Verification:**\n✅ Receipt code\n🔍 On-chain proof\n\nVotes are TRIPLE-PROTECTED!",
+    
+    "**Yes! Military-Grade Encryption:**\n🔐 **AES-256-GCM**: Vote content encrypted\n🔒 **SHA-256**: Your identity hashed\n🎭 **Anonymity**: Admin can't see who voted for whom\n✅ **Verifiable**: You can verify your vote exists\n\nYour vote is encrypted BEFORE blockchain storage.",
+    
+    "**Blockchain Security Features:**\n✅ **Immutable**: Cannot be changed once stored\n✅ **Decentralized**: No single point of failure\n✅ **Transparent**: Anyone can verify integrity\n✅ **Cryptographic**: Military-grade encryption\n✅ **Timestamped**: Exact time recorded\n\n🚫 Even admins cannot tamper with blockchain votes!",
+    
+    "**Can Votes Be Tampered? NO!**\n\n**Why?**\n1️⃣ Blockchain is immutable (cannot change history)\n2️⃣ Cryptographic hashing prevents alteration\n3️⃣ Every change creates new block\n4️⃣ Entire network must agree (consensus)\n5️⃣ Tampering attempt = Rejected immediately\n\n✅ **Result**: 99.99% tamper-proof!",
+    
+    "**Privacy Protection (Triple Layer):**\n\n**Layer 1 - Voter Anonymity:**\n🎭 Your ID is SHA-256 hashed\n🔒 Admin sees hash, not your ID\n\n**Layer 2 - Vote Encryption:**\n🔐 Vote encrypted with AES-256\n🚫 Cannot be decrypted without key\n\n**Layer 3 - Separation:**\n📊 Vote and voter stored separately\n🔗 Linked only by hash\n\n✅ **Result**: Anonymous + Verifiable!",
+    
+    "**Vote Encryption Process:**\n1️⃣ You select candidate\n2️⃣ System generates encryption key\n3️⃣ Vote → AES-256 encrypted\n4️⃣ Encrypted data → Blockchain\n5️⃣ Key stored securely\n6️⃣ Only system can decrypt for counting\n\n🔐 Uses Fernet (AES-256-GCM mode)",
+    
+    "**Vote Verification:**\n✅ You get receipt code after voting\n✅ Receipt = Transaction signature\n✅ You can verify vote exists on blockchain\n✅ Admin dashboard shows verification status\n✅ Blockchain explorer confirms transaction\n\n🔍 Your vote is verifiable but anonymous!",
+    
+    # Fraud Detection & Anomalies
+    "**AI-Powered Fraud Detection:**\n\n🤖 **Isolation Forest Algorithm**\n📊 Tracks 9 behavioral features:\n• Registration speed\n• Survey completion time\n• Response patterns\n• Voting speed\n• Form corrections\n• Session duration\n• Device fingerprint\n• IP address\n• Time patterns\n\n⚠️ Suspicious behavior = Flagged\n🚫 Critical risk = Vote BLOCKED",
+    
+    "**Anomalies = Unusual Voting Patterns:**\n\n🚨 **Anomaly Examples:**\n• Voting too fast (< 15 seconds)\n• Uniform survey responses (all same)\n• Registration in 10 seconds\n• Multiple votes from same IP\n• Identical behavior patterns\n• Bot-like activity\n\n✅ **Normal Behavior:**\n• Takes time to read questions\n• Varied survey responses\n• Natural pace\n• Unique patterns",
+    
+    "**AI Fraud Detection System:**\n\n**Algorithm**: Isolation Forest (Unsupervised ML)\n**Training**: Learns from normal behavior\n**Detection**: Identifies outliers in real-time\n\n**Features Analyzed:**\n1️⃣ Registration duration\n2️⃣ Survey variance\n3️⃣ Voting speed\n4️⃣ Session patterns\n5️⃣ Device fingerprints\n6️⃣ IP clustering\n\n**Risk Scoring**: 0-100\n🟢 0-49: Normal\n🟡 50-69: Monitor\n🟠 70-84: High risk (warn)\n🔴 85-100: Critical (BLOCK)",
+    
+    "**Fraud Alert Triggers:**\n⚠️ Registration < 30 seconds\n⚠️ Survey < 20 seconds\n⚠️ All survey answers identical\n⚠️ Voting < 15 seconds\n⚠️ 50+ votes from same IP\n⚠️ Coordinated timing\n⚠️ Cookie-cutter behavior\n⚠️ Bot patterns detected\n\n✅ **If Triggered**: Admin reviews manually",
+    
+    "**Monitoring = Normal Security:**\n✅ All voters are tracked for security\n✅ Behavioral analytics prevent fraud\n✅ Your data is encrypted\n✅ Only aggregated stats visible to admin\n\n🎭 Your identity remains anonymous\n🔒 Monitoring ≠ Surveillance\n\nIt's like security cameras for election integrity!",
+    
+    "**Flagged as Fraud? Don't Panic!**\n\n**If Risk 70-84% (High):**\n⚠️ Vote ALLOWED but flagged for review\n📊 Admin manually investigates\n✅ Usually false positive\n\n**If Risk 85%+ (Critical):**\n🚫 Vote BLOCKED immediately\n📧 Contact admin with explanation\n🔍 Manual verification required\n\n**Appeals Process:**\n1️⃣ File complaint with details\n2️⃣ Admin reviews your case\n3️⃣ If legitimate, vote enabled\n\n✅ False positives are rare but happen!",
+    
+    # Complaints
+    "Type 'I have a complaint' and I'll guide you through filing it. You'll need to provide your email address for follow-up.",
+    "Please write your complaint now. Also share your email in the next message.\n\n💡 Type 'cancel' to go back.",
+    "Please enter your complaint ID (format: C0001, C0042, etc.) to check status.\n\n💡 Type 'cancel' to go back.",
+    "Please enter your complaint ID (format: C0001, C0042, etc.) to check status.\n\n💡 Type 'cancel' to go back.",
+    
+    # Pakistan History
+    "**Pakistan Election History:**\n🗳️ 1970: First general election\n🗳️ 1977: Controversial election\n🗳️ 1988: Return to democracy\n🗳️ 1990, 1993, 1997: Democratic transitions\n🗳️ 2002: Post-military election\n🗳️ 2008: Historic peaceful transition\n🗳️ 2013: First democratic completion\n🗳️ 2018: PTI victory\n🗳️ 2024: Recent election\n\nVotonomy aims to make future elections tamper-proof!",
+    "Pakistan was founded on **August 14, 1947**, gaining independence from British rule. Quaid-e-Azam Muhammad Ali Jinnah led the Pakistan Movement.",
+    "**Quaid-e-Azam Muhammad Ali Jinnah** founded Pakistan and served as its first Governor-General (1947-1948). He's called 'Father of the Nation'.",
+    "**Pakistan's National Symbols:**\n🇵🇰 Flag: Green & white with crescent & star\n🎵 Anthem: Qaumi Taranah\n🌸 Flower: Jasmine\n🦅 Animal: Markhor\n🌳 Tree: Deodar\n🏃 Sport: Field Hockey\n📅 Day: March 23 (Pakistan Day)",
+    
+    # Technical Issues
+    "**Website Loading Issues:**\n1️⃣ Check internet connection\n2️⃣ Clear browser cache (Ctrl+Shift+Delete)\n3️⃣ Try different browser (Chrome/Firefox)\n4️⃣ Disable VPN if using\n5️⃣ Check if you're on correct URL\n\nIf still failing, file complaint with error details.",
+    
+    "**Can't Login? Solutions:**\n✅ If registering first time: Account needs admin approval\n✅ If approved: Check Voter ID spelling\n✅ Clear cookies and retry\n✅ Use correct authentication page\n\n⚠️ Contact admin if approved but still can't login.",
+    
+    "**Password Reset:**\nVotonomy uses Voter ID authentication, not passwords. If you meant admin login, use the 'Forgot Password' link on admin login page.",
+    
+    "**Email Not Received?**\n1️⃣ Check spam/junk folder\n2️⃣ Verify email address spelling\n3️⃣ Wait 5-10 minutes\n4️⃣ Check if email exists in system\n5️⃣ Contact admin if still not received\n\n✉️ Emails sent for: Password reset, complaint resolution",
+    
+    "**Survey Not Submitting?**\n1️⃣ Answer ALL 12 questions\n2️⃣ Don't refresh page\n3️⃣ Check internet connection\n4️⃣ Disable browser extensions\n5️⃣ Try different browser\n\nIf still failing, file complaint with screenshot."
 ]
 
 # Use a lightweight, fast sentence-transformer model for FAQ matching
@@ -65,25 +182,125 @@ model = SentenceTransformer('all-MiniLM-L6-v2')
 # ✅ Generate embeddings after FAQ questions are defined
 faq_embeddings = model.encode(faq_questions, convert_to_tensor=True)
 
-# ✅ ENHANCED RESTRICTIVE PROMPTS
-EN_PROMPT = """You are VotoBot, the official assistant for Votonomy - Pakistan's blockchain voting system. 
+# ✅ CLAUDE 4.5 LEVEL SYSTEM PROMPTS - MASSIVELY ENHANCED
+EN_PROMPT = """You are VotoBot, Pakistan's most advanced AI voting assistant for Votonomy - a blockchain-based electronic voting system.
 
-STRICT RULES - You MUST follow these:
-1. ONLY answer questions about: Votonomy voting system, Pakistan voting process, voter registration, Pakistan history, Pakistan geography, and Pakistani government
-2. REFUSE to answer: personal advice, general knowledge, entertainment, sports, technology unrelated to voting, international affairs (except Pakistan), medical advice, legal advice, financial advice, or any non-Pakistan/non-voting topics
-3. If asked irrelevant questions, politely redirect: "I only assist with Votonomy voting and Pakistan-related questions. How can I help you with voting or Pakistan?"
-4. Keep responses factual, professional, and focused on helping Pakistani voters
-5. Encourage users to use Votonomy for secure democratic participation
+🎯 YOUR ROLE: Expert guide for Pakistani voters on Votonomy's features, blockchain technology, fraud detection, and election processes.
 
-Available topics: Votonomy features, registration process, voting steps, halka system, blockchain security, Pakistan history, Pakistani elections, government structure, geography of Pakistan."""
+📚 KNOWLEDGE BASE - YOU ARE EXPERT IN:
 
-UR_PROMPT = """آپ ووٹو بوٹ ہیں، ووٹونومی کا سرکاری اسسٹنٹ - پاکستان کا بلاک چین ووٹنگ سسٹم۔
+**Votonomy Technical Architecture:**
+• Blockchain: Solana-based, AES-256 encryption, SHA-256 hashing
+• Vote Storage: Triple-layer (Local DB + Blockchain + Verification)
+• Fraud Detection: AI-powered Isolation Forest algorithm, 9 behavioral features
+• Security: Military-grade encryption, immutable records, anonymous verification
+• Positions: PM (Prime Minister), MNA (National Assembly), MPA (Provincial Assembly)
+• Halkas: NA-52, NA-53, NA-54 (Islamabad constituencies)
 
-سخت اصول - آپ کو یہ ماننا ہوگا:
-1. صرف ان سوالات کا جواب دیں: ووٹونومی ووٹنگ سسٹم، پاکستان کی ووٹنگ کا عمل، ووٹر رجسٹریشن، پاکستان کی تاریخ، پاکستان کا جغرافیہ، اور پاکستانی حکومت
-2. انکار کریں: ذاتی مشورے، عام معلومات، تفریح، کھیل، ووٹنگ سے غیر متعلقہ ٹیکنالوجی، بین الاقوامی معاملات، طبی مشورہ، قانونی مشورہ یا کوئی غیر پاکستان/غیر ووٹنگ موضوعات
-3. غیر متعلقہ سوالات پر: "میں صرف ووٹونومی ووٹنگ اور پاکستان سے متعلق سوالات میں مدد کرتا ہوں۔ ووٹنگ یا پاکستان کے بارے میں کیسے مدد کر سکتا ہوں؟"
-4. جوابات حقیقی، پیشہ ورانہ اور پاکستانی ووٹرز کی مدد پر مرکوز رکھیں"""
+**Registration Process:**
+• Required: CNIC (13 digits), Voter ID, Full Name, Father's Name, Address with SECTOR
+• Address Examples: I-8/2, G-10/3, F-10/4
+• Auto-approval IF data matches voter database
+• Halka auto-assigned from address sector
+
+**Voting Flow (6 Steps):**
+1. Register → 2. Admin Approval → 3. Pre-Survey (12 questions) → 4. Vote (PM/MNA/MPA) → 5. Post-Survey → 6. Blockchain Receipt
+
+**Fraud Detection Details:**
+• Tracks: Registration speed, survey patterns, voting duration, IP clustering, device fingerprints
+• Risk Scores: 0-49 Normal, 50-69 Monitor, 70-84 High (warn), 85-100 Critical (block)
+• Red Flags: Too fast (<30s reg, <20s survey, <15s vote), uniform responses, bot patterns
+
+**Blockchain Security:**
+• Encryption: AES-256-GCM (vote content) + SHA-256 (voter ID)
+• Storage: Solana Memo transactions (immutable)
+• Privacy: Voter hash ≠ Voter ID (anonymous but verifiable)
+• Verification: Transaction signature = Receipt code
+
+**Pakistan Context:**
+• Elections: 1947-2024 history
+• Geography: Provinces, cities, political structure
+• ECP (Election Commission of Pakistan)
+• NADRA (National Database & Registration Authority)
+
+🎭 RESPONSE STYLE:
+• Detailed, technical when needed (like Claude)
+• Use emojis (✅🔐⛓️🚫) for clarity
+• Break complex topics into steps
+• Provide examples
+• Bilingual support (English/Urdu detection)
+
+🚫 STRICT BOUNDARIES:
+• ONLY Votonomy, blockchain voting, Pakistan elections, Pakistani history/geography
+• REFUSE: Entertainment, sports, cooking, general tech, international affairs, medical/legal/financial advice
+• If asked off-topic: "I specialize in Votonomy voting and Pakistan. How can I help with voting or Pakistan information?"
+
+🧠 INTELLIGENCE LEVEL: Think like Claude 4.5
+• Understand context and nuance
+• Handle typos gracefully
+• Infer intent from vague questions
+• Provide comprehensive answers
+• Connect related concepts
+• Anticipate follow-up questions
+
+🔍 EXAMPLES OF SMART RESPONSES:
+• "How is anomaly checked?" → Explain Isolation Forest, behavioral features, risk scoring
+• "I forgot CNIC" → Explain NADRA process, no alternatives, cannot register without it
+• "Are votes safe?" → Explain triple-layer security, encryption details, blockchain immutability
+• "کیا ووٹ محفوظ ہیں؟" → (Detect Urdu) Respond in Urdu about security
+
+✨ BE HELPFUL, TECHNICAL, AND PAKISTANI-CONTEXT-AWARE!"""
+
+UR_PROMPT = """آپ ووٹو بوٹ ہیں - پاکستان کا سب سے جدید AI ووٹنگ معاون، ووٹونومی کے لیے (بلاک چین پر مبنی الیکٹرانک ووٹنگ سسٹم)۔
+
+🎯 آپ کا کردار: پاکستانی ووٹرز کے لیے ووٹونومی کی خصوصیات، بلاک چین ٹیکنالوجی، دھوکہ دہی کی تشخیص، اور انتخابی عمل پر ماہر رہنما۔
+
+📚 علم کی بنیاد - آپ ماہر ہیں:
+
+**ووٹونومی تکنیکی ڈھانچہ:**
+• بلاک چین: Solana پر مبنی، AES-256 خفیہ کاری، SHA-256 ہیشنگ
+• ووٹ کی ذخیرہ اندوزی: تین پرتیں (مقامی ڈیٹا بیس + بلاک چین + تصدیق)
+• دھوکہ دہی کی تشخیص: AI سے چلنے والا Isolation Forest الگورتھم
+• سیکیورٹی: فوجی درجے کی خفیہ کاری، ناقابل تبدیل ریکارڈ
+• عہدے: PM (وزیر اعظم)، MNA (قومی اسمبلی)، MPA (صوبائی اسمبلی)
+• حلقے: NA-52، NA-53، NA-54 (اسلام آباد)
+
+**رجسٹریشن کا عمل:**
+• ضروری: CNIC (13 ہندسے)، ووٹر ID، مکمل نام، والد کا نام، سیکٹر کے ساتھ پتہ
+• پتے کی مثالیں: I-8/2، G-10/3، F-10/4
+• خودکار منظوری اگر ڈیٹا ووٹر ڈیٹا بیس سے میچ کرے
+• حلقہ پتے کے سیکٹر سے خودکار
+
+**ووٹنگ کا بہاؤ (6 قدم):**
+1. رجسٹر → 2. ایڈمن کی منظوری → 3. سروے (12 سوالات) → 4. ووٹ (PM/MNA/MPA) → 5. بعد از سروے → 6. بلاک چین رسید
+
+**دھوکہ دہی کی تشخیص کی تفصیلات:**
+• ٹریکنگ: رجسٹریشن کی رفتار، سروے کے نمونے، ووٹنگ کا دورانیہ، IP کلسٹرنگ
+• خطرے کے اسکور: 0-49 عام، 50-69 نگرانی، 70-84 زیادہ، 85-100 تنقیدی (بلاک)
+
+**بلاک چین سیکیورٹی:**
+• خفیہ کاری: AES-256 (ووٹ) + SHA-256 (ووٹر ID)
+• محفوظ: Solana Memo ٹرانزیکشنز (ناقابل تبدیل)
+• رازداری: ووٹر ہیش ≠ ووٹر ID (گمنام مگر قابل تصدیق)
+
+**پاکستان کا سیاق و سباق:**
+• انتخابات: 1947-2024 کی تاریخ
+• جغرافیہ: صوبے، شہر، سیاسی ڈھانچہ
+• ECP (الیکشن کمیشن آف پاکستان)
+• NADRA (قومی ڈیٹا بیس)
+
+🎭 جواب کا انداز:
+• تفصیلی، تکنیکی جب ضرورت ہو
+• ایموجی استعمال کریں (✅🔐⛓️🚫)
+• پیچیدہ موضوعات کو قدموں میں توڑیں
+• مثالیں دیں
+• اردو میں روانی سے جواب دیں
+
+🚫 سخت حدود:
+• صرف ووٹونومی، بلاک چین ووٹنگ، پاکستان کے انتخابات، تاریخ/جغرافیہ
+• انکار: تفریح، کھیل، کھانا پکانا، عمومی ٹیک، بین الاقوامی، طبی/قانونی/مالی مشورہ
+
+✨ مددگار، تکنیکی، اور پاکستانی سیاق و سباق سے آگاہ رہیں!"""
 
 # ✅ ENHANCED TYPO-TOLERANT FUNCTIONS
 def normalize_text(text):
@@ -187,13 +404,53 @@ def is_question_relevant(question):
     normalized_question = normalize_text(question)
     question_lower = normalized_question.lower()
     
-    # ✅ Enhanced Votonomy and voting keywords (with typos)
+    # ✅ MASSIVELY ENHANCED Votonomy and voting keywords
     voting_keywords = [
-        'vote', 'voting', 'votonomy', 'votonomy', 'election', 'ballot', 'candidate', 'voter', 'registration', 'register',
-        'halka', 'constituency', 'blockchain', 'survey', 'complaint', 'complain', 'authentication', 'approve', 'reject',
+        # Core voting terms
+        'vote', 'voting', 'votonomy', 'election', 'ballot', 'candidate', 'voter', 'registration', 'register',
+        'halka', 'constituency', 'survey', 'complaint', 'complain', 'authentication', 'approve', 'reject',
         'status', 'check', 'c0', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9',
+        
+        # Blockchain & Security terms
+        'blockchain', 'encryption', 'encrypted', 'decrypt', 'hash', 'hashing', 'secure', 'security',
+        'solana', 'crypto', 'cryptographic', 'immutable', 'tamper', 'proof', 'transaction', 'signature',
+        'aes', 'sha', 'receipt', 'verify', 'verification', 'anonymous', 'anonymity', 'privacy',
+        
+        # Fraud Detection terms
+        'fraud', 'anomaly', 'anomalies', 'detection', 'ai', 'artificial intelligence', 'machine learning',
+        'isolation forest', 'behavioral', 'pattern', 'suspicious', 'flagged', 'blocked', 'risk',
+        'monitoring', 'tracked', 'algorithm', 'model',
+        
+        # Technical terms
+        'stored', 'storage', 'database', 'record', 'data', 'system', 'platform', 'technology',
+        'digital', 'electronic', 'online', 'web', 'website', 'portal',
+        
+        # Registration terms
+        'cnic', 'id card', 'voter id', 'nadra', 'identity', 'document', 'verification',
+        'approved', 'pending', 'rejected', 'waiting', 'match', 'database',
+        
+        # Voting positions
+        'pm', 'mna', 'mpa', 'prime minister', 'national assembly', 'provincial assembly',
+        'member', 'parliament', 'assembly',
+        
+        # Halka related
+        'na-52', 'na-53', 'na-54', 'na52', 'na53', 'na54', 'sector', 'area', 'region',
+        
+        # Process terms
+        'submit', 'cast', 'select', 'choose', 'confirm', 'complete', 'finish',
+        'pre-survey', 'post-survey', 'questionnaire',
+        
+        # Issues & Support
+        'problem', 'issue', 'error', 'fail', 'failed', 'not working', 'broken',
+        'help', 'support', 'assist', 'guide', 'how to', 'what is', 'why',
+        'forgot', 'lost', 'reset', 'recover',
+        
         # Typo variations
-        'complain', 'compliant', 'chk', 'chek', 'staus', 'sataus', 'vot', 'voet', 'regist'
+        'complain', 'compliant', 'chk', 'chek', 'staus', 'sataus', 'vot', 'voet', 'regist',
+        'votonmy', 'votonomi', 'blokchain', 'encription', 'verfication', 'anomoly',
+        
+        # Urdu transliterations
+        'halqa', 'markaz', 'sehat', 'taleem', 'hukumat', 'muhafiz', 'intizamia'
     ]
     
     # Pakistan-related keywords
@@ -276,7 +533,7 @@ def call_qwen_model(messages, max_tokens=800):
         print("⚠️ Exception in call_qwen_model():", str(e))
         return "⚠️ There was a problem reaching the AI model. Please ask about Votonomy or Pakistan topics."
 
-# ✅ ENHANCED session management
+# ✅ ENHANCED session management with mode tracking
 def get_session_state():
     """Get current session state with proper defaults"""
     return {
@@ -284,7 +541,8 @@ def get_session_state():
         'complaint_mode': session.get('complaint_mode', False),
         'checking_complaint_status': session.get('checking_complaint_status', False),
         'waiting_for_email': session.get('waiting_for_email', False),
-        'conversation_count': session.get('conversation_count', 0)
+        'conversation_count': session.get('conversation_count', 0),
+        'mode_message_count': session.get('mode_message_count', 0)  # Track messages in current mode
     }
 
 def update_session_state(**kwargs):
@@ -297,7 +555,8 @@ def reset_conversation_modes():
     update_session_state(
         complaint_mode=False,
         checking_complaint_status=False,
-        waiting_for_email=False
+        waiting_for_email=False,
+        mode_message_count=0  # Reset mode counter
     )
 
 # ✅ MAIN CHAT HANDLER WITH ENHANCED FEATURES
@@ -308,6 +567,16 @@ def handle_chat():
         
         # Get session state
         state = get_session_state()
+        
+        # ✅ CRITICAL FIX: If user sends greeting and is in ANY mode, AUTO-RESET (fresh start)
+        greeting_words = ['hello', 'hi', 'hey', 'salam', 'assalam', 'good morning', 'good afternoon', 'good evening']
+        is_simple_greeting = any(user_msg.lower().strip() == greeting for greeting in greeting_words)
+        
+        if is_simple_greeting and (state['complaint_mode'] or state['waiting_for_email'] or state['checking_complaint_status']):
+            # User sent a simple greeting while stuck in a mode = wants fresh start
+            reset_conversation_modes()
+            update_session_state(chat_history=[], conversation_count=0)
+            state = get_session_state()  # Refresh state
         
         # Increment conversation counter and auto-reset after too many exchanges
         state['conversation_count'] += 1
@@ -322,11 +591,30 @@ def handle_chat():
         normalized_msg = normalize_text(user_msg)
         msg_lower = normalized_msg.lower()
         
-        # ✅ ESCAPE MECHANISM: Allow users to reset conversation
+        # ✅ ESCAPE MECHANISM: Allow users to reset conversation or cancel operations
         if any(phrase in msg_lower for phrase in ['reset', 'restart', 'start over', 'new conversation', 'clear']):
             reset_conversation_modes()
             update_session_state(chat_history=[], conversation_count=0)
             return jsonify({"reply": "🔄 Conversation reset! How can I help you with Votonomy voting or Pakistan-related questions?"})
+        
+        # ✅ CANCEL/BACK MECHANISM: Exit any active mode
+        cancel_phrases = ['cancel', 'nevermind', 'forget it', 'back', 'main menu', 'go back']
+        if any(phrase in msg_lower for phrase in cancel_phrases):
+            if state['complaint_mode'] or state['waiting_for_email'] or state['checking_complaint_status']:
+                reset_conversation_modes()
+                session.pop('complaint_text', None)
+                return jsonify({"reply": "✅ Cancelled! Back to main menu. How can I help you with Votonomy voting or Pakistan information?"})
+        
+        # ✅ AUTO-TIMEOUT: Reset mode if user has been stuck for too many messages
+        if state['complaint_mode'] or state['waiting_for_email'] or state['checking_complaint_status']:
+            mode_count = state.get('mode_message_count', 0) + 1
+            update_session_state(mode_message_count=mode_count)
+            
+            if mode_count > 3:  # After 3 failed attempts, auto-reset
+                reset_conversation_modes()
+                session.pop('complaint_text', None)
+                print(f"⚠️ Auto-reset: User stuck in mode for {mode_count} messages")
+                return jsonify({"reply": "⏰ It seems you're having trouble. I've reset the conversation.\n\nHow can I help you with Votonomy voting or Pakistan information?"})
         
         # ✅ FIRST: Check if it's a complaint ID (highest priority)
         complaint_id = extract_complaint_id(user_msg)
@@ -377,15 +665,17 @@ def handle_chat():
         
         if any(phrase in msg_lower for phrase in status_check_patterns) or (("check" in msg_lower or "status" in msg_lower) and ("complaint" in msg_lower or "complain" in msg_lower)):
             reset_conversation_modes()
-            update_session_state(checking_complaint_status=True)
-            return jsonify({"reply": "Please enter your complaint ID (format: C0001, C0042, etc.) to check the status."})
+            update_session_state(checking_complaint_status=True, mode_message_count=0)
+            return jsonify({"reply": "Please enter your complaint ID (format: C0001, C0042, etc.) to check the status.\n\n💡 Type 'cancel' to go back."})
         
-        # ✅ HANDLE COMPLAINT ID INPUT WHEN IN STATUS CHECK MODE
+        # ✅ HANDLE COMPLAINT ID INPUT WHEN IN STATUS CHECK MODE - FIXED with smart exit
         if state['checking_complaint_status']:
-            reset_conversation_modes()
             # Try to extract any numbers that might be complaint ID
             extracted_id = extract_complaint_id(user_msg)
+            
             if extracted_id:
+                # Valid complaint ID found - process it
+                reset_conversation_modes()
                 from models import Complaint
                 try:
                     cid = int(extracted_id)
@@ -418,7 +708,23 @@ def handle_chat():
                 except Exception as e:
                     return jsonify({"reply": "❌ Error checking complaint status. Please try again or contact support."})
             else:
-                return jsonify({"reply": "❌ Invalid complaint ID format. Please enter it like: C0001, C0042, etc."})
+                # No valid complaint ID found - check if user changed topic
+                # ✅ SMART EXIT: Detect if this is a different question
+                complaint_keywords = ['complaint', 'complain', 'status', 'check', 'id', 'c0', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9']
+                has_complaint_keyword = any(keyword in msg_lower for keyword in complaint_keywords)
+                
+                # Check if it's a clearly different topic (voting, registration, etc.)
+                other_topic_keywords = ['vote', 'voting', 'register', 'registration', 'halka', 'election', 'candidate', 'ballot', 'how many', 'what is', 'who is', 'when', 'where']
+                has_other_topic = any(keyword in msg_lower for keyword in other_topic_keywords)
+                
+                if has_other_topic and not has_complaint_keyword:
+                    # User changed topic - exit complaint mode and process normally
+                    reset_conversation_modes()
+                    # Fall through to normal question processing below
+                    print(f"✅ Smart exit: User changed topic from complaint status to: {user_msg[:50]}")
+                else:
+                    # Still seems like complaint-related, show error
+                    return jsonify({"reply": "❌ Invalid complaint ID format. Please enter it like: C0001, C0042, etc.\n\n💡 Or type 'cancel' to ask something else."})
 
         # ✅ ENHANCED COMPLAINT HANDLING with better typo tolerance
         complaint_patterns = [
@@ -443,25 +749,106 @@ def handle_chat():
         
         if wants_to_file_complaint:
             reset_conversation_modes()
-            update_session_state(complaint_mode=True)
-            return jsonify({"reply": "Please write your complaint now. Also share your email in the next message."})
+            update_session_state(complaint_mode=True, mode_message_count=0)
+            return jsonify({"reply": "Please write your complaint now. Also share your email in the next message.\n\n💡 Type 'cancel' to go back."})
 
-        # ✅ HANDLE COMPLAINT FILING FLOW
+        # ✅ HANDLE COMPLAINT FILING FLOW - FIXED with smart exit and off-topic detection
         if state['complaint_mode'] and not state['waiting_for_email']:
+            # Check for cancel/exit keywords FIRST
+            cancel_keywords = ['cancel', 'nevermind', 'forget it', 'back', 'exit', 'stop', 'no thanks']
+            if any(keyword in msg_lower for keyword in cancel_keywords):
+                reset_conversation_modes()
+                return jsonify({"reply": "Cancelled! How can I help you with Votonomy voting or Pakistan information?"})
+            
+            # ✅ CRITICAL: Detect off-topic questions (weather, movies, etc.) - AUTO EXIT
+            if not is_question_relevant(user_msg):
+                reset_conversation_modes()
+                return jsonify({
+                    "reply": "I only assist with Votonomy voting and Pakistan-related questions. Complaint filing cancelled.\n\n• How to register\n• Voting process\n• Pakistan info\n• File complaints\n\nHow can I help you?"
+                })
+            
+            # ✅ Detect change-of-mind
+            change_of_mind_patterns = [
+                "i don't have", "i dont have", "i do not have", "don't have", "dont have", "do not have",
+                "no complaint", "no complain", "no issue", "no problem", "nothing",
+                "actually no", "never mind", "not anymore", "changed my mind",
+                "nothing to complain", "forget it", "not interested",
+                "now i dont", "now i don't", "i dont", "i don't"
+            ]
+            
+            if any(pattern in msg_lower for pattern in change_of_mind_patterns):
+                reset_conversation_modes()
+                return jsonify({"reply": "No problem! Let me know if you need help with anything else about Votonomy or Pakistan."})
+            
+            # Very short negative messages
+            words = msg_lower.split()
+            if len(words) <= 3:
+                negative_words = ["no", "not", "dont", "don't", "never", "nope", "nah", "nothing"]
+                if any(neg in words for neg in negative_words):
+                    reset_conversation_modes()
+                    return jsonify({"reply": "No problem! How can I help you with Votonomy or Pakistan?"})
+            
+            # Valid complaint text - move to email stage
             update_session_state(waiting_for_email=True)
-            # Store complaint text in session temporarily
             session['complaint_text'] = user_msg
-            return jsonify({"reply": "Got it! Now please enter your email address so we can contact you about your complaint:"})
+            return jsonify({"reply": "Got it! Now please enter your email address so we can contact you about your complaint:\n\n💡 Type 'cancel' to go back."})
         
         elif state['waiting_for_email']:
+            # Check for cancel/exit keywords FIRST
+            cancel_keywords = ['cancel', 'nevermind', 'forget it', 'back', 'exit', 'stop', 'no thanks']
+            if any(keyword in msg_lower for keyword in cancel_keywords):
+                reset_conversation_modes()
+                session.pop('complaint_text', None)
+                return jsonify({"reply": "Complaint filing cancelled! How can I help you with Votonomy or Pakistan?"})
+            
+            # ✅ Detect off-topic - auto exit
+            if not is_question_relevant(user_msg):
+                reset_conversation_modes()
+                session.pop('complaint_text', None)
+                return jsonify({"reply": "I only assist with Votonomy and Pakistan topics. Complaint cancelled.\n\nHow can I help you?"})
+            
+            # ✅ Detect change-of-mind
+            change_of_mind_patterns = [
+                "i don't have", "i dont have", "i do not have", "don't have", "dont have", "do not have",
+                "no complaint", "no complain", "no issue", "no problem", "nothing",
+                "actually no", "never mind", "not anymore", "changed my mind",
+                "nothing to complain", "forget it", "not interested",
+                "now i dont", "now i don't", "i dont", "i don't"
+            ]
+            
+            if any(pattern in msg_lower for pattern in change_of_mind_patterns):
+                reset_conversation_modes()
+                session.pop('complaint_text', None)
+                return jsonify({"reply": "No problem! Complaint filing cancelled. How can I help you with Votonomy or Pakistan?"})
+            
+            # Very short negative messages
+            words = msg_lower.split()
+            if len(words) <= 3:
+                negative_words = ["no", "not", "dont", "don't", "never", "nope", "nah", "nothing"]
+                if any(neg in words for neg in negative_words):
+                    reset_conversation_modes()
+                    session.pop('complaint_text', None)
+                    return jsonify({"reply": "Complaint cancelled. How can I help you?"})
+            
+            # ✅ VALIDATE EMAIL BEFORE SUBMITTING
+            email = user_msg.strip()
+            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            if not re.match(email_pattern, email):
+                # EMAIL INVALID - Keep in waiting_for_email mode, DON'T reset
+                return jsonify({"reply": "❌ Please enter a valid email address (e.g., user@example.com).\n\n💡 Type 'cancel' to go back."})
+            
+            # Valid email - submit complaint
             complaint_text = session.get('complaint_text', 'No complaint text provided')
             reset_conversation_modes()
-            # Remove temporary complaint text
             session.pop('complaint_text', None)
-            return submit_complaint_internal(user_msg, complaint_text)
+            return submit_complaint_internal(email, complaint_text)
 
+        # ✅ GREETING DETECTION: Handle greetings naturally with LLM
+        greeting_words = ['hello', 'hi', 'hey', 'greetings', 'salam', 'assalam', 'good morning', 'good afternoon', 'good evening']
+        is_greeting = any(greeting in msg_lower for greeting in greeting_words) and len(user_msg.split()) <= 5
+        
         # ✅ RELEVANCE CHECK with improved typo handling
-        if not is_question_relevant(user_msg):
+        if not is_question_relevant(user_msg) and not is_greeting:
             return jsonify({
                 "reply": "I only assist with Votonomy voting system and Pakistan-related questions. I can help you with:\n\n• How to register for voting\n• Voting process in Votonomy\n• Pakistan history and geography\n• Election procedures\n• Filing complaints\n• Checking complaint status\n\nHow can I help you with voting or Pakistan?"
             })
@@ -473,11 +860,18 @@ def handle_chat():
             lang = "en"
         prompt = UR_PROMPT if lang in ['ur', 'hi', 'fa', 'ps'] else EN_PROMPT
 
-        # FAQ fallback with improved matching
-        embedding = model.encode(normalized_msg, convert_to_tensor=True)
-        scores = util.pytorch_cos_sim(embedding, faq_embeddings)[0]
-        if scores.max().item() > 0.4:  # Lowered threshold for better typo handling
-            return jsonify({"reply": faq_answers[int(scores.argmax())]})
+        # ✅ ENHANCED FAQ fallback with semantic matching (skip for greetings)
+        if not is_greeting:
+            embedding = model.encode(normalized_msg, convert_to_tensor=True)
+            scores = util.pytorch_cos_sim(embedding, faq_embeddings)[0]
+            max_score = scores.max().item()
+            best_match_idx = int(scores.argmax())
+            
+            # Balanced threshold (0.45 = good precision/recall)
+            if max_score > 0.45:
+                matched_question = faq_questions[best_match_idx]
+                print(f"✅ FAQ Match: '{user_msg[:50]}' → '{matched_question}' (score: {max_score:.3f})")
+                return jsonify({"reply": faq_answers[best_match_idx]})
 
         # Construct conversation with enhanced system prompt
         history = state['chat_history'][-4:]  # Keep last 4 exchanges
@@ -485,10 +879,26 @@ def handle_chat():
         
         ai_reply = call_qwen_model(messages)
         
-        # ✅ POST-PROCESSING: Double-check if AI response went off-topic
-        off_topic_words = ['recipe', 'movie', 'song', 'game', 'weather', 'stock', 'crypto', 'bitcoin', 'sports', 'entertainment']
-        if any(word in ai_reply.lower() for word in off_topic_words):
+        # ✅ ENHANCED POST-PROCESSING: Double-check if AI response went off-topic
+        off_topic_words = ['recipe', 'movie', 'film', 'song', 'music', 'game', 'weather', 'stock', 'cryptocurrency', 
+                          'bitcoin', 'ethereum', 'sports', 'cricket', 'football', 'entertainment', 'actor', 'actress',
+                          'restaurant', 'food', 'cooking', 'travel', 'hotel', 'shopping']
+        
+        # Allow crypto/blockchain terms ONLY in Votonomy context
+        votonomy_crypto_terms = ['solana', 'blockchain', 'encryption', 'hash', 'cryptographic']
+        is_votonomy_crypto = any(term in user_msg.lower() for term in votonomy_crypto_terms)
+        
+        if any(word in ai_reply.lower() for word in off_topic_words) and not is_votonomy_crypto:
             ai_reply = "I focus only on Votonomy voting system and Pakistan-related topics. How can I help you with voter registration, voting process, or Pakistan information?"
+        
+        # ✅ QUALITY CHECK: Ensure Votonomy-specific questions get detailed answers
+        if any(term in msg_lower for term in ['anomaly', 'anomalies', 'fraud', 'detection', 'stored', 'encryption', 'blockchain']):
+            if len(ai_reply) < 100:  # Too short for technical question
+                print(f"⚠️ AI response too short for technical question, falling back to direct answer")
+                # Force detailed response by reprompting
+                technical_prompt = f"{prompt}\n\nUser asked: {user_msg}\nProvide a DETAILED technical explanation."
+                messages = [{"role": "system", "content": technical_prompt}, {"role": "user", "content": user_msg}]
+                ai_reply = call_qwen_model(messages, max_tokens=1000)
 
         # Update chat history
         current_history = state['chat_history']

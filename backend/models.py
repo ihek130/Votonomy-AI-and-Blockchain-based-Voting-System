@@ -136,7 +136,7 @@ class PreSurvey(db.Model):
 
 class Complaint(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(100), nullable=True)  # Made optional for anonymous complaints
     complaint_text = db.Column(db.Text, nullable=False)
     status = db.Column(db.String(20), default='Pending')  # Pending, In Progress, Resolved
     response = db.Column(db.Text)
@@ -194,3 +194,139 @@ class SentimentAnalytics(db.Model):
     
     def __repr__(self):
         return f'<SentimentAnalytics: {self.total_responses} responses>'
+
+
+# ============================================================================
+# FRAUD DETECTION MODELS
+# ============================================================================
+
+class BehaviorLog(db.Model):
+    """Track user behavior for AI fraud detection"""
+    __tablename__ = 'behavior_log'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    voter_id = db.Column(db.String(100), db.ForeignKey('voter.voter_id'), nullable=False)
+    session_id = db.Column(db.String(100), nullable=False)
+    
+    # Registration metrics
+    registration_duration = db.Column(db.Integer)  # seconds
+    form_corrections = db.Column(db.Integer, default=0)
+    
+    # Survey metrics
+    survey_duration = db.Column(db.Integer)  # seconds
+    survey_response_variance = db.Column(db.Float)
+    survey_entropy = db.Column(db.Float)
+    
+    # Voting metrics
+    voting_duration = db.Column(db.Integer)  # seconds
+    candidate_selection_speed = db.Column(db.Integer)  # seconds
+    
+    # Session metrics
+    total_session_duration = db.Column(db.Integer)  # seconds
+    ip_address = db.Column(db.String(50))
+    device_fingerprint = db.Column(db.String(200))
+    user_agent = db.Column(db.String(300))
+    
+    # AI scores
+    isolation_forest_score = db.Column(db.Float)  # Anomaly score
+    behavioral_risk_score = db.Column(db.Float)   # Overall risk
+    
+    # Additional behavioral features
+    page_navigation_pattern = db.Column(db.JSON)  # Navigation sequence
+    time_of_day = db.Column(db.Integer)  # Hour (0-23)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<BehaviorLog {self.voter_id}: Risk={self.behavioral_risk_score}>'
+
+
+class FraudAlert(db.Model):
+    """Store fraud detection alerts for admin review"""
+    __tablename__ = 'fraud_alert'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    voter_id = db.Column(db.String(100), db.ForeignKey('voter.voter_id'), nullable=True)
+    admin_id = db.Column(db.Integer, db.ForeignKey('admin.id'), nullable=True)
+    
+    alert_type = db.Column(db.String(50), nullable=False)  # 'bot', 'coordination', 'timing', etc.
+    severity = db.Column(db.String(20), nullable=False)    # 'low', 'medium', 'high', 'critical'
+    risk_score = db.Column(db.Float, nullable=False)
+    
+    description = db.Column(db.Text)
+    detected_patterns = db.Column(db.JSON)  # What triggered the alert
+    red_flags = db.Column(db.JSON)          # List of suspicious factors
+    
+    # Investigation
+    status = db.Column(db.String(20), default='open')  # 'open', 'investigating', 'false_positive', 'confirmed'
+    admin_notes = db.Column(db.Text)
+    action_taken = db.Column(db.String(100))  # 'blocked', 'flagged', 'verified', 'ignored'
+    resolved_at = db.Column(db.DateTime)
+    resolved_by = db.Column(db.Integer, db.ForeignKey('admin.id'))
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    voter = db.relationship('Voter', backref='fraud_alerts', foreign_keys=[voter_id])
+    
+    def __repr__(self):
+        return f'<FraudAlert {self.alert_type}: {self.severity} - {self.status}>'
+
+
+class IPCluster(db.Model):
+    """Track voters from same IP/device for pattern analysis"""
+    __tablename__ = 'ip_cluster'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    ip_address = db.Column(db.String(50), nullable=False, unique=True)
+    device_fingerprint = db.Column(db.String(200))
+    
+    # Cluster statistics
+    voter_count = db.Column(db.Integer, default=0)
+    vote_similarity_score = db.Column(db.Float)     # 0-1: How similar are votes
+    timing_variance = db.Column(db.Float)            # Seconds: Time gaps between votes
+    survey_similarity = db.Column(db.Float)          # 0-1: Survey response similarity
+    geographic_spread = db.Column(db.Float)          # 0-1: CNIC geographic diversity
+    
+    # Whitelisting for legitimate shared locations
+    is_whitelisted = db.Column(db.Boolean, default=False)
+    whitelist_reason = db.Column(db.String(200))  # 'internet_cafe', 'community_center', etc.
+    
+    # Risk assessment
+    risk_assessment = db.Column(db.String(20), default='unknown')  # 'normal', 'suspicious', 'fraud'
+    coordination_score = db.Column(db.Float)  # Multi-factor coordination risk
+    flagged_at = db.Column(db.DateTime)
+    
+    # Tracking
+    first_vote_at = db.Column(db.DateTime)
+    last_vote_at = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<IPCluster {self.ip_address}: {self.voter_count} voters - {self.risk_assessment}>'
+
+
+class AdminActionLog(db.Model):
+    """Monitor admin actions for suspicious behavior"""
+    __tablename__ = 'admin_action_log'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    admin_id = db.Column(db.Integer, db.ForeignKey('admin.id'), nullable=False)
+    
+    action_type = db.Column(db.String(50), nullable=False)  # 'approve_voter', 'delete_vote', etc.
+    action_target = db.Column(db.String(100))  # ID of affected entity
+    action_details = db.Column(db.JSON)        # Additional context
+    
+    # Risk indicators
+    bulk_action = db.Column(db.Boolean, default=False)  # True if part of bulk operation
+    unusual_time = db.Column(db.Boolean, default=False)  # True if outside work hours
+    risk_score = db.Column(db.Float)
+    
+    ip_address = db.Column(db.String(50))
+    user_agent = db.Column(db.String(300))
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<AdminAction {self.action_type} by Admin {self.admin_id}>'

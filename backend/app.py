@@ -1,10 +1,10 @@
 # app.py - UPDATED VERSION with Structured Survey + Blockchain Integration
 
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail
 from itsdangerous import URLSafeTimedSerializer
-from models import db, Voter, Candidate, Vote, Admin, PreSurvey
+from models import db, Voter, Candidate, Vote, Admin, PreSurvey, BehaviorLog, Complaint
 from admin import admin_bp  # Admin panel routes
 from models import Voter, VoterList
 from geo_utils import get_halka_from_address
@@ -14,6 +14,12 @@ from chatbot import chatbot_bp
 from models import PreSurveyNLP, SentimentAnalytics  # Keep for backwards compatibility with existing data
 from datetime import datetime
 from blockchain.vote_recorder import get_vote_recorder  # ✅ NEW: Blockchain integration
+
+# ✅ NEW: Fraud Detection Integration
+from fraud_detection.behavior_analyzer import get_behavior_analyzer
+from fraud_detection.fraud_detector import get_fraud_detector
+from fraud_detection.pattern_detector import get_pattern_detector
+import time
 
 app = Flask(__name__)
 
@@ -230,9 +236,29 @@ def register():
     if 'voter_id' not in session:
         return redirect(url_for('authenticate'))
     
+    # ✅ FRAUD DETECTION: Start behavior tracking
+    if 'session_id' not in session:
+        session['session_id'] = f"{session['voter_id']}_{int(time.time())}"
+    
+    if 'registration_start' not in session:
+        session['registration_start'] = time.time()
+        
+        # Initialize behavior analyzer
+        behavior_analyzer = get_behavior_analyzer()
+        behavior_analyzer.start_session(
+            voter_id=session['voter_id'],
+            session_id=session['session_id'],
+            ip_address=request.remote_addr,
+            user_agent=request.user_agent.string
+        )
+        behavior_analyzer.log_registration_start(session['session_id'])
+    
     if request.method == 'POST':
         # ✅ Get voter_id from session (already verified in authentication)
         voter_id = session.get('voter_id')
+        
+        # ✅ FRAUD DETECTION: Track registration duration
+        registration_duration = int(time.time() - session.get('registration_start', time.time()))
         
         # Get form data
         name = request.form['name'].strip()
@@ -245,6 +271,10 @@ def register():
         address = request.form['address'].strip()
         town = request.form.get('town', '').strip()
         phone = request.form.get('phone', '').strip()
+        
+        # ✅ FRAUD DETECTION: Log registration completion
+        behavior_analyzer = get_behavior_analyzer()
+        behavior_analyzer.log_registration_end(session['session_id'], corrections=0)
 
         # Auto-assign halka based on address
         halka = get_halka_from_address(address)
@@ -309,9 +339,20 @@ def register():
 def pre_survey():
     if 'voter_id' not in session:
         return redirect(url_for('authenticate'))
+    
+    # ✅ FRAUD DETECTION: Track survey start
+    if request.method == 'GET' and 'survey_start' not in session:
+        session['survey_start'] = time.time()
+        
+        behavior_analyzer = get_behavior_analyzer()
+        if 'session_id' in session:
+            behavior_analyzer.log_survey_start(session['session_id'])
 
     if request.method == 'POST':
         voter_id = session['voter_id']
+        
+        # ✅ FRAUD DETECTION: Calculate survey duration
+        survey_duration = int(time.time() - session.get('survey_start', time.time()))
         
         # ✅ Check if voter already completed survey
         existing_survey = PreSurvey.query.filter_by(voter_id=voter_id).first()
@@ -321,21 +362,47 @@ def pre_survey():
         
         try:
             # ✅ Get structured responses (1=Positive, 0=Neutral, -1=Negative)
+            responses = [
+                int(request.form.get('economy_satisfaction')),
+                int(request.form.get('economy_inflation_impact')),
+                int(request.form.get('government_performance')),
+                int(request.form.get('government_corruption')),
+                int(request.form.get('security_safety')),
+                int(request.form.get('security_law_order')),
+                int(request.form.get('education_quality')),
+                int(request.form.get('healthcare_access')),
+                int(request.form.get('infrastructure_roads')),
+                int(request.form.get('infrastructure_utilities')),
+                int(request.form.get('future_optimism')),
+                int(request.form.get('future_confidence'))
+            ]
+            
             survey = PreSurvey(
                 voter_id=voter_id,
-                economy_satisfaction=int(request.form.get('economy_satisfaction')),
-                economy_inflation_impact=int(request.form.get('economy_inflation_impact')),
-                government_performance=int(request.form.get('government_performance')),
-                government_corruption=int(request.form.get('government_corruption')),
-                security_safety=int(request.form.get('security_safety')),
-                security_law_order=int(request.form.get('security_law_order')),
-                education_quality=int(request.form.get('education_quality')),
-                healthcare_access=int(request.form.get('healthcare_access')),
-                infrastructure_roads=int(request.form.get('infrastructure_roads')),
-                infrastructure_utilities=int(request.form.get('infrastructure_utilities')),
-                future_optimism=int(request.form.get('future_optimism')),
-                future_confidence=int(request.form.get('future_confidence'))
+                economy_satisfaction=responses[0],
+                economy_inflation_impact=responses[1],
+                government_performance=responses[2],
+                government_corruption=responses[3],
+                security_safety=responses[4],
+                security_law_order=responses[5],
+                education_quality=responses[6],
+                healthcare_access=responses[7],
+                infrastructure_roads=responses[8],
+                infrastructure_utilities=responses[9],
+                future_optimism=responses[10],
+                future_confidence=responses[11]
             )
+            
+            # ✅ FRAUD DETECTION: Log survey completion
+            behavior_analyzer = get_behavior_analyzer()
+            if 'session_id' in session:
+                behavior_analyzer.log_survey_end(session['session_id'], responses)
+                
+                # Check for survey bot patterns
+                if survey_duration < 20:
+                    flash("⚠️ Survey completed very quickly. Your response has been flagged for review.", "warning")
+                elif len(set(responses)) == 1:
+                    flash("⚠️ Uniform survey responses detected. Your response has been flagged for review.", "warning")
             
             # ✅ Calculate overall sentiment
             survey.calculate_overall_sentiment()
@@ -373,8 +440,18 @@ def cast_vote():
     if Vote.query.filter_by(voter_id=voter_id).first():
         flash("❌ You have completed the voting process once and are not allowed to vote again.", "danger")
         return redirect(url_for('confirm_vote'))
+    
+    # ✅ FRAUD DETECTION: Track voting start
+    if request.method == 'GET' and 'voting_start' not in session:
+        session['voting_start'] = time.time()
+        
+        behavior_analyzer = get_behavior_analyzer()
+        if 'session_id' in session:
+            behavior_analyzer.log_voting_start(session['session_id'])
 
     if request.method == 'POST':
+        # ✅ FRAUD DETECTION: Calculate voting duration
+        voting_duration = int(time.time() - session.get('voting_start', time.time()))
         votes = {}
         for key in request.form:
             if key.startswith("votes["):
@@ -386,6 +463,88 @@ def cast_vote():
         if len(votes) < 3:
             flash("❌ You must vote for all required positions before submitting.", "danger")
             return redirect(url_for('cast_vote'))
+        
+        # ✅ FRAUD DETECTION: PRE-VOTE FRAUD CHECK
+        behavior_analyzer = get_behavior_analyzer()
+        assessment = None
+        if 'session_id' in session:
+            behavior_analyzer.log_voting_end(session['session_id'])
+            
+            # Get current behavior metrics
+            session_data = behavior_analyzer.get_session_metrics(session['session_id'])
+            
+            if session_data:
+                # Calculate behavior metrics for assessment
+                reg_duration = int(session_data.get('registration_duration', 0))
+                survey_duration = int(session_data.get('survey_duration', 0))
+            else:
+                # Session data not found, use defaults
+                reg_duration = 0
+                survey_duration = 0
+            
+                # Get survey variance from database
+                survey = PreSurvey.query.filter_by(voter_id=voter_id).first()
+                if survey:
+                    responses = [
+                        survey.economy_satisfaction, survey.economy_inflation_impact,
+                        survey.government_performance, survey.government_corruption,
+                        survey.security_safety, survey.security_law_order,
+                        survey.education_quality, survey.healthcare_access,
+                        survey.infrastructure_roads, survey.infrastructure_utilities,
+                        survey.future_optimism, survey.future_confidence
+                    ]
+                    import statistics
+                    survey_variance = statistics.variance(responses) if len(set(responses)) > 1 else 0.0
+                else:
+                    survey_variance = 0.0
+                
+                # Prepare behavior data for fraud detection
+                behavior_dict = {
+                    'registration_duration': reg_duration,
+                    'form_corrections': 0,
+                    'survey_duration': survey_duration,
+                    'survey_response_variance': survey_variance,
+                    'survey_entropy': 1.0 if survey_variance > 0.5 else 0.5,
+                    'voting_duration': voting_duration,
+                    'candidate_selection_speed': voting_duration // 2,
+                    'total_session_duration': reg_duration + survey_duration + voting_duration,
+                    'time_of_day': datetime.utcnow().hour
+                }
+                
+                # Run fraud detection BEFORE saving vote
+                try:
+                    fraud_detector = get_fraud_detector()
+                    assessment = fraud_detector.assess_behavior(behavior_dict)
+                    
+                    print(f"🔍 Pre-Vote Fraud Check: {assessment['risk_score']:.1f}/100 ({assessment['severity']})")
+                    
+                    # BLOCK VOTE if critical risk (85%+)
+                    if assessment['risk_score'] >= 85:
+                        flash("🚫 VOTE REJECTED: Your voting behavior has been identified as fraudulent.", "danger")
+                        flash(f"Reason: {', '.join(assessment['red_flags'][:3])}", "warning")
+                        flash("If you believe this is an error, please contact election administrators.", "info")
+                        
+                        # Log the blocked attempt
+                        behavior_log = behavior_analyzer.save_to_database(voter_id, session['session_id'])
+                        behavior_log.isolation_forest_score = assessment['isolation_forest_score']
+                        behavior_log.behavioral_risk_score = assessment['risk_score']
+                        db.session.commit()
+                        
+                        # Create fraud alert
+                        fraud_detector.create_fraud_alert(voter_id, behavior_log, assessment)
+                        
+                        print(f"🚫 VOTE BLOCKED for {voter_id}: Risk {assessment['risk_score']:.1f}%")
+                        return redirect(url_for('index'))
+                    
+                    # WARN but ALLOW if high risk (70-84%)
+                    elif assessment['risk_score'] >= 70:
+                        flash("⚠️ Your voting behavior has been flagged for review.", "warning")
+                        flash("Your vote will be recorded but may be verified by administrators.", "info")
+                    
+                except Exception as e:
+                    print(f"⚠️  Fraud detection error: {str(e)}")
+                    # If fraud detection fails, allow vote to proceed
+        
 
         # ✅ BLOCKCHAIN INTEGRATION: Initialize vote recorder
         try:
@@ -444,6 +603,19 @@ def cast_vote():
                 vote.is_verified_on_chain = False
 
         db.session.commit()
+        
+        # ✅ FRAUD DETECTION: Update final behavior log (assessment done pre-vote)
+        if 'session_id' in session and 'assessment' in locals():
+            behavior_log = BehaviorLog.query.filter_by(
+                voter_id=voter_id, 
+                session_id=session['session_id']
+            ).first()
+            
+            if behavior_log:
+                behavior_log.isolation_forest_score = assessment['isolation_forest_score']
+                behavior_log.behavioral_risk_score = assessment['risk_score']
+                db.session.commit()
+                print(f"✅ Vote allowed with Risk: {assessment['risk_score']:.1f}/100")
         
         # Show success message with blockchain status
         blockchain_count = Vote.query.filter_by(voter_id=voter_id, is_verified_on_chain=True).count()
@@ -515,6 +687,89 @@ def confirm_vote():
                          user_votes=votes,
                          total_votes=total_votes,
                          verified_votes=verified_votes)
+
+# ---------------------------
+# Complaint Portal API (Anonymous Complaints)
+# ---------------------------
+@app.route('/api/complaint/submit', methods=['POST'])
+def submit_anonymous_complaint():
+    """Submit anonymous complaint without email"""
+    try:
+        data = request.json
+        complaint_text = data.get('complaint_text', '').strip()
+        
+        if not complaint_text:
+            return jsonify({"success": False, "message": "❌ Complaint text is required."}), 400
+        
+        if len(complaint_text) < 10:
+            return jsonify({"success": False, "message": "❌ Complaint must be at least 10 characters long."}), 400
+        
+        # Create complaint with no email
+        new_complaint = Complaint(
+            email=None,  # Anonymous complaint
+            complaint_text=complaint_text,
+            status='Pending'
+        )
+        db.session.add(new_complaint)
+        db.session.commit()
+        
+        complaint_id = f"C{new_complaint.id:04d}"
+        
+        return jsonify({
+            "success": True,
+            "message": f"✅ Complaint submitted successfully!",
+            "complaint_id": complaint_id
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Error submitting complaint: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "message": f"❌ Error: {str(e)}"}), 500
+
+@app.route('/api/complaint/status/<complaint_id>', methods=['GET'])
+def check_complaint_status(complaint_id):
+    """Check status of complaint by ID"""
+    try:
+        # Extract numeric ID
+        if complaint_id.startswith('C'):
+            complaint_id = complaint_id[1:]
+        
+        complaint_id_num = int(complaint_id)
+        complaint = Complaint.query.get(complaint_id_num)
+        
+        if not complaint:
+            return jsonify({
+                "success": False,
+                "message": f"❌ Complaint C{complaint_id_num:04d} not found."
+            }), 404
+        
+        status_emoji = {
+            'Pending': '⏳',
+            'In Progress': '🔄',
+            'Resolved': '✅'
+        }
+        
+        return jsonify({
+            "success": True,
+            "complaint_id": f"C{complaint.id:04d}",
+            "status": complaint.status,
+            "status_emoji": status_emoji.get(complaint.status, '📋'),
+            "submitted_at": complaint.created_at.strftime('%d/%m/%Y at %H:%M'),
+            "response": complaint.response if complaint.response else None
+        }), 200
+        
+    except ValueError:
+        return jsonify({
+            "success": False,
+            "message": "❌ Invalid complaint ID format."
+        }), 400
+    except Exception as e:
+        print(f"Error checking complaint status: {str(e)}")
+        return jsonify({
+            "success": False,
+            "message": "❌ Error checking complaint status."
+        }), 500
 
 # ---------------------------
 # Run the App

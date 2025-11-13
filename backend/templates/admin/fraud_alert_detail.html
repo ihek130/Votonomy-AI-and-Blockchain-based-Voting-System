@@ -1,0 +1,250 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Fraud Alert #{{ alert.id }} - Votonomy Admin{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+  <a href="{{ url_for('admin_bp.fraud_dashboard') }}" class="btn-back">
+    <i class="fas fa-arrow-left"></i> Back to Dashboard
+  </a>
+  <h2><i class="fas fa-exclamation-triangle"></i> Fraud Alert Details #{{ alert.id }}</h2>
+</div>
+
+<!-- Alert Summary Card -->
+<div class="content-card">
+  <div class="card-header">
+    <h3>Alert Summary</h3>
+    <span class="badge-severity badge-severity-{{ alert.severity }}">
+      {{ alert.severity|upper }}
+    </span>
+  </div>
+
+  <div class="detail-grid">
+    <div class="detail-item">
+      <label>Risk Score</label>
+      <div class="risk-score-large">
+        <div class="risk-score-circle risk-score-circle-{{ alert.severity }}">
+          <span class="risk-score-number">{{ "%.0f"|format(alert.risk_score) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <label>Alert Type</label>
+      <p>{{ alert.alert_type|replace('_', ' ')|title }}</p>
+    </div>
+
+    <div class="detail-item">
+      <label>Status</label>
+      <p>
+        <span class="badge-status badge-status-{{ alert.status }}">
+          {{ alert.status|replace('_', ' ')|title }}
+        </span>
+      </p>
+    </div>
+
+    <div class="detail-item">
+      <label>Detected At</label>
+      <p class="text-monospace">{{ alert.detected_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+    </div>
+
+    {% if alert.resolved_at %}
+    <div class="detail-item">
+      <label>Resolved At</label>
+      <p class="text-monospace">{{ alert.resolved_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+    </div>
+    {% endif %}
+
+    {% if alert.resolved_by_admin_id %}
+    <div class="detail-item">
+      <label>Resolved By</label>
+      <p>Admin #{{ alert.resolved_by_admin_id }}</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Voter Information -->
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-user"></i> Voter Information</h3>
+  </div>
+
+  <div class="detail-grid">
+    <div class="detail-item">
+      <label>Name</label>
+      <p><strong>{{ alert.voter.name }}</strong></p>
+    </div>
+
+    <div class="detail-item">
+      <label>CNIC</label>
+      <p class="text-monospace">{{ alert.voter.cnic }}</p>
+    </div>
+
+    <div class="detail-item">
+      <label>City</label>
+      <p>{{ alert.voter.city }}</p>
+    </div>
+
+    <div class="detail-item">
+      <label>Registration Date</label>
+      <p class="text-monospace">{{ alert.voter.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+    </div>
+  </div>
+</div>
+
+<!-- Behavior Analysis -->
+{% if behavior %}
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-chart-line"></i> Behavioral Analysis</h3>
+  </div>
+
+  <div class="behavior-metrics">
+    <div class="metric-row">
+      <div class="metric-label">Registration Duration</div>
+      <div class="metric-value">{{ "%.1f"|format(behavior.registration_duration) }}s</div>
+      <div class="metric-indicator metric-indicator-{{ 'danger' if behavior.registration_duration < 30 else 'success' }}">
+        <i class="fas fa-{{ 'exclamation-triangle' if behavior.registration_duration < 30 else 'check-circle' }}"></i>
+      </div>
+    </div>
+
+    <div class="metric-row">
+      <div class="metric-label">Survey Completion Time</div>
+      <div class="metric-value">{{ "%.1f"|format(behavior.survey_duration) }}s</div>
+      <div class="metric-indicator metric-indicator-{{ 'danger' if behavior.survey_duration < 20 else 'success' }}">
+        <i class="fas fa-{{ 'exclamation-triangle' if behavior.survey_duration < 20 else 'check-circle' }}"></i>
+      </div>
+    </div>
+
+    <div class="metric-row">
+      <div class="metric-label">Survey Response Variance</div>
+      <div class="metric-value">{{ "%.2f"|format(behavior.survey_variance) }}</div>
+      <div class="metric-indicator metric-indicator-{{ 'danger' if behavior.survey_variance < 0.1 else 'success' }}">
+        <i class="fas fa-{{ 'exclamation-triangle' if behavior.survey_variance < 0.1 else 'check-circle' }}"></i>
+      </div>
+    </div>
+
+    <div class="metric-row">
+      <div class="metric-label">Voting Duration</div>
+      <div class="metric-value">{{ "%.1f"|format(behavior.voting_duration) }}s</div>
+      <div class="metric-indicator metric-indicator-{{ 'warning' if behavior.voting_duration < 5 else 'success' }}">
+        <i class="fas fa-{{ 'exclamation-circle' if behavior.voting_duration < 5 else 'check-circle' }}"></i>
+      </div>
+    </div>
+
+    <div class="metric-row">
+      <div class="metric-label">IP Address</div>
+      <div class="metric-value text-monospace">{{ behavior.ip_address }}</div>
+      <div class="metric-indicator">
+        <i class="fas fa-globe"></i>
+      </div>
+    </div>
+
+    <div class="metric-row">
+      <div class="metric-label">Device Fingerprint</div>
+      <div class="metric-value text-monospace text-truncate">{{ behavior.device_fingerprint[:20] }}...</div>
+      <div class="metric-indicator">
+        <i class="fas fa-mobile-alt"></i>
+      </div>
+    </div>
+
+    <div class="metric-row">
+      <div class="metric-label">Hour of Day</div>
+      <div class="metric-value">{{ behavior.hour_of_day }}:00</div>
+      <div class="metric-indicator metric-indicator-{{ 'warning' if behavior.hour_of_day >= 0 and behavior.hour_of_day < 5 else 'success' }}">
+        <i class="fas fa-clock"></i>
+      </div>
+    </div>
+
+    <div class="metric-row">
+      <div class="metric-label">ML Anomaly Score</div>
+      <div class="metric-value">{{ "%.1f"|format(behavior.ml_anomaly_score) if behavior.ml_anomaly_score else 'N/A' }}</div>
+      <div class="metric-indicator metric-indicator-{{ 'danger' if behavior.ml_anomaly_score and behavior.ml_anomaly_score > 70 else 'success' }}">
+        <i class="fas fa-brain"></i>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Red Flags -->
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-flag"></i> Red Flags Detected</h3>
+    <span class="badge-count badge-count-{{ alert.severity }}">
+      {{ alert.red_flags|length }}
+    </span>
+  </div>
+
+  <div class="red-flags-container">
+    {% if alert.red_flags %}
+      {% for flag in alert.red_flags %}
+      <div class="red-flag-item">
+        <i class="fas fa-exclamation-circle"></i>
+        <span>{{ flag }}</span>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p class="text-muted">No specific red flags identified.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Alert Description -->
+<div class="content-card">
+  <div class="card-header">
+    <h3><i class="fas fa-info-circle"></i> Description</h3>
+  </div>
+
+  <div class="alert-description">
+    <p>{{ alert.description }}</p>
+  </div>
+</div>
+
+<!-- Action Buttons -->
+{% if alert.status == 'pending' %}
+<div class="action-buttons-sticky">
+  <form action="{{ url_for('admin_bp.resolve_fraud_alert', alert_id=alert.id) }}" method="POST" class="action-form">
+    <input type="hidden" name="action" value="legitimate">
+    <button type="submit" class="btn-action btn-success">
+      <i class="fas fa-check"></i> Mark as Legitimate
+    </button>
+  </form>
+
+  <form action="{{ url_for('admin_bp.resolve_fraud_alert', alert_id=alert.id) }}" method="POST" class="action-form">
+    <input type="hidden" name="action" value="fraud_confirmed">
+    <button type="submit" class="btn-action btn-danger">
+      <i class="fas fa-ban"></i> Confirm Fraud
+    </button>
+  </form>
+
+  <form action="{{ url_for('admin_bp.resolve_fraud_alert', alert_id=alert.id) }}" method="POST" class="action-form">
+    <input type="hidden" name="action" value="false_positive">
+    <button type="submit" class="btn-action btn-warning">
+      <i class="fas fa-times"></i> False Positive
+    </button>
+  </form>
+</div>
+{% else %}
+<div class="alert-resolved-banner">
+  <i class="fas fa-check-circle"></i>
+  <span>This alert has been resolved as: <strong>{{ alert.status|replace('_', ' ')|title }}</strong></span>
+</div>
+{% endif %}
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-messages">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+{% endblock %}

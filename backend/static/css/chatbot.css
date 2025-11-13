@@ -240,7 +240,7 @@
   cursor: default !important;
 }
 
-/* 💬 Typing Animation - 3 Dots */
+/* 💬 Typing Animation - 3 Dots - FIXED to allow immediate stop */
 .dot-flashing {
   position: relative;
   width: 40px;
@@ -278,6 +278,7 @@
   animation-delay: 0.4s;
 }
 
+/* Animation keyframes */
 @keyframes typing {
   0%, 60%, 100% {
     opacity: 0.3;
@@ -287,6 +288,21 @@
     opacity: 1;
     transform: scale(1);
   }
+}
+
+/* Stop animation when hidden - ENHANCED */
+#typing[style*="animation: none"] .dot-flashing,
+#typing[style*="animation: none"] .dot-flashing::before,
+#typing[style*="animation: none"] .dot-flashing::after,
+#typing[style*="animation: none"] .typing-dot {
+  animation: none !important;
+  opacity: 0 !important;
+}
+
+/* Additional safeguard to stop all animations in removed typing elements */
+.typing-dot[style*="animation: none"] {
+  animation: none !important;
+  opacity: 0 !important;
 }
 
 /* ✅ Message Animations */

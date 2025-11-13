@@ -646,6 +646,161 @@ def blockchain_audit_report():
         return redirect(url_for('admin_bp.blockchain_dashboard'))
 
 # ------------------------------
+# AI Fraud Detection Dashboard
+# ------------------------------
+@admin_bp.route('/fraud/dashboard')
+@admin_login_required
+def fraud_dashboard():
+    """AI-driven fraud detection monitoring dashboard"""
+    from models import BehaviorLog, FraudAlert, IPCluster
+    from fraud_detection.fraud_detector import get_fraud_detector
+    
+    # Get statistics
+    total_logs = BehaviorLog.query.count()
+    total_alerts = FraudAlert.query.count()
+    open_alerts = FraudAlert.query.filter_by(status='open').count()
+    critical_alerts = FraudAlert.query.filter_by(severity='critical', status='open').count()
+    high_alerts = FraudAlert.query.filter_by(severity='high', status='open').count()
+    
+    # Get recent alerts
+    recent_alerts = FraudAlert.query.order_by(FraudAlert.created_at.desc()).limit(20).all()
+    
+    # Get high-risk voters
+    high_risk_logs = BehaviorLog.query.filter(
+        BehaviorLog.behavioral_risk_score >= 70
+    ).order_by(BehaviorLog.behavioral_risk_score.desc()).limit(10).all()
+    
+    # Get suspicious IP clusters
+    suspicious_clusters = IPCluster.query.filter(
+        IPCluster.risk_assessment.in_(['suspicious', 'fraud'])
+    ).order_by(IPCluster.coordination_score.desc()).limit(10).all()
+    
+    # Get fraud detector stats
+    fraud_detector = get_fraud_detector()
+    fd_stats = fraud_detector.get_statistics()
+    
+    stats = {
+        'total_behavior_logs': total_logs,
+        'total_alerts': total_alerts,
+        'open_alerts': open_alerts,
+        'critical_alerts': critical_alerts,
+        'high_alerts': high_alerts,
+        'model_trained': fd_stats['model_trained']
+    }
+    
+    return render_template('admin/fraud_dashboard.html',
+                         stats=stats,
+                         alerts=recent_alerts,  # Template expects 'alerts', not 'recent_alerts'
+                         high_risk_logs=high_risk_logs,
+                         suspicious_clusters=suspicious_clusters)
+
+@admin_bp.route('/fraud/alert/<int:alert_id>')
+@admin_login_required
+def fraud_alert_detail(alert_id):
+    """Detailed view of fraud alert"""
+    from models import FraudAlert, BehaviorLog, Vote
+    
+    alert = FraudAlert.query.get_or_404(alert_id)
+    
+    # Get related behavior logs
+    behavior_logs = None
+    related_votes = None
+    
+    if alert.voter_id:
+        behavior_logs = BehaviorLog.query.filter_by(voter_id=alert.voter_id).all()
+        related_votes = Vote.query.filter_by(voter_id=alert.voter_id).all()
+    
+    return render_template('admin/fraud_alert_detail.html',
+                         alert=alert,
+                         behavior_logs=behavior_logs,
+                         related_votes=related_votes)
+
+@admin_bp.route('/fraud/alert/<int:alert_id>/resolve', methods=['POST'])
+@admin_login_required
+def resolve_fraud_alert(alert_id):
+    """Resolve fraud alert"""
+    from models import FraudAlert
+    
+    alert = FraudAlert.query.get_or_404(alert_id)
+    
+    action = request.form.get('action')  # 'confirm', 'false_positive', 'investigate'
+    notes = request.form.get('notes', '')
+    
+    if action == 'confirm':
+        alert.status = 'confirmed'
+        alert.action_taken = 'blocked'
+        flash(f"Alert #{alert_id} confirmed as fraud. Voter flagged.", "danger")
+    elif action == 'false_positive':
+        alert.status = 'false_positive'
+        alert.action_taken = 'verified'
+        flash(f"Alert #{alert_id} marked as false positive.", "success")
+    elif action == 'investigate':
+        alert.status = 'investigating'
+        flash(f"Alert #{alert_id} under investigation.", "info")
+    
+    alert.admin_notes = notes
+    alert.resolved_at = datetime.utcnow()
+    alert.resolved_by = session.get('admin_id')
+    
+    db.session.commit()
+    
+    return redirect(url_for('admin_bp.fraud_dashboard'))
+
+@admin_bp.route('/fraud/retrain-model', methods=['POST'])
+@admin_login_required
+def retrain_fraud_model():
+    """Retrain fraud detection model with latest data"""
+    from fraud_detection.fraud_detector import get_fraud_detector
+    
+    try:
+        fraud_detector = get_fraud_detector()
+        success = fraud_detector.retrain_model()
+        
+        if success:
+            flash("✅ Fraud detection model retrained successfully!", "success")
+        else:
+            flash("⚠️ Insufficient data for retraining. Need at least 50 samples.", "warning")
+    except Exception as e:
+        flash(f"❌ Model retraining failed: {str(e)}", "danger")
+    
+    return redirect(url_for('admin_bp.fraud_dashboard'))
+
+@admin_bp.route('/fraud/analyze-patterns', methods=['POST'])
+@admin_login_required
+def analyze_fraud_patterns():
+    """Run coordinated attack pattern analysis"""
+    from fraud_detection.pattern_detector import get_pattern_detector
+    from models import Vote, BehaviorLog
+    
+    try:
+        pattern_detector = get_pattern_detector()
+        
+        # Check if we have enough data
+        total_votes = Vote.query.count()
+        total_logs = BehaviorLog.query.count()
+        
+        if total_votes < 50:
+            flash(f"ℹ️ Pattern analysis requires at least 50 votes. Current: {total_votes} votes. Individual behavior alerts are still being monitored.", "info")
+            return redirect(url_for('admin_bp.fraud_dashboard'))
+        
+        # Analyze recent votes
+        suspicious_clusters = pattern_detector.analyze_recent_votes(window_minutes=60)
+        
+        # Update IP clusters
+        pattern_detector.update_ip_clusters()
+        
+        if suspicious_clusters:
+            flash(f"⚠️ {len(suspicious_clusters)} suspicious voting patterns detected! Check alerts for details.", "warning")
+            for cluster in suspicious_clusters:
+                flash(f"  • {cluster['vote_count']} coordinated votes detected with {len(cluster['analysis']['red_flags'])} red flags", "warning")
+        else:
+            flash(f"✅ No coordinated attack patterns detected in {total_votes} votes. Individual fraud detection is active.", "success")
+    except Exception as e:
+        flash(f"❌ Pattern analysis failed: {str(e)}", "danger")
+    
+    return redirect(url_for('admin_bp.fraud_dashboard'))
+
+# ------------------------------
 # Download Voting Results
 # ------------------------------
 @admin_bp.route('/download-results', methods=['GET'])

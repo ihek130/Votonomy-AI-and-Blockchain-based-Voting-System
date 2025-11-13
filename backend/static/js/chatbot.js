@@ -227,8 +227,11 @@ function appendMessage(sender, text) {
   }, 50);
 }
 
-// ✅ Enhanced Typing Indicator
+// ✅ Enhanced Typing Indicator - FIXED to ensure clean removal
 function showTyping() {
+  // Remove any existing typing indicator first
+  removeTyping();
+  
   const typing = document.createElement("div");
   typing.id = "typing";
   typing.className = "bot typing";
@@ -269,6 +272,7 @@ function showTyping() {
   // Create animated dots
   for (let i = 0; i < 3; i++) {
     const dot = document.createElement("div");
+    dot.className = "typing-dot";
     dot.style.cssText = `
       width: 6px;
       height: 6px;
@@ -299,13 +303,24 @@ function showTyping() {
   }
 }
 
-// ✅ Remove Typing Indicator
+// ✅ Remove Typing Indicator - FIXED to stop animation immediately
 function removeTyping() {
   const typing = document.getElementById("typing");
   if (typing) {
-    typing.style.transition = "opacity 0.3s ease";
-    typing.style.opacity = "0";
-    setTimeout(() => typing.remove(), 300);
+    // Stop all animations on the typing indicator and its children
+    const dots = typing.querySelectorAll('.typing-dot');
+    dots.forEach(dot => {
+      dot.style.animation = 'none';
+      dot.style.opacity = '0';
+    });
+    
+    const dotFlashing = typing.querySelector('.dot-flashing');
+    if (dotFlashing) {
+      dotFlashing.style.animation = 'none';
+    }
+    
+    // Immediately remove the element without transition
+    typing.remove();
   }
 }
 
