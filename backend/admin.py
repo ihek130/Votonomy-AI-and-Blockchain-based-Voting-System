@@ -5,7 +5,7 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer
 from flask_mail import Message
-from models import db, Voter, Candidate, Vote, Admin, PreSurvey, SentimentAnalytics
+from models import db, Voter, Candidate, Vote, Admin, PreSurvey, SentimentAnalytics, FraudAlert, BehaviorLog, Complaint
 from data import positions_db, candidate_requests  # candidate_requests remains in-memory
 import pandas as pd
 import io
@@ -698,22 +698,31 @@ def fraud_dashboard():
 @admin_login_required
 def fraud_alert_detail(alert_id):
     """Detailed view of fraud alert"""
-    from models import FraudAlert, BehaviorLog, Vote
-    
-    alert = FraudAlert.query.get_or_404(alert_id)
-    
-    # Get related behavior logs
-    behavior_logs = None
-    related_votes = None
-    
-    if alert.voter_id:
-        behavior_logs = BehaviorLog.query.filter_by(voter_id=alert.voter_id).all()
-        related_votes = Vote.query.filter_by(voter_id=alert.voter_id).all()
-    
-    return render_template('admin/fraud_alert_detail.html',
-                         alert=alert,
-                         behavior_logs=behavior_logs,
-                         related_votes=related_votes)
+    try:
+        alert = FraudAlert.query.filter_by(id=alert_id).first()
+        
+        if not alert:
+            flash('Fraud alert not found', 'danger')
+            return redirect(url_for('admin_bp.fraud_dashboard'))
+        
+        # Get related behavior logs
+        behavior_logs = None
+        related_votes = None
+        
+        if alert.voter_id:
+            behavior_logs = BehaviorLog.query.filter_by(voter_id=alert.voter_id).all()
+            related_votes = Vote.query.filter_by(voter_id=alert.voter_id).all()
+        
+        return render_template('admin/fraud_alert_detail.html',
+                             alert=alert,
+                             behavior_logs=behavior_logs,
+                             related_votes=related_votes)
+    except Exception as e:
+        print(f"Error loading fraud alert {alert_id}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        flash(f'Error loading fraud alert: {str(e)}', 'danger')
+        return redirect(url_for('admin_bp.fraud_dashboard'))
 
 @admin_bp.route('/fraud/alert/<int:alert_id>/resolve', methods=['POST'])
 @admin_login_required

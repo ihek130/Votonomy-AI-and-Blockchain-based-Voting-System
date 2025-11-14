@@ -1,8 +1,9 @@
 {% extends "admin/base_admin.html" %}
 
-{% block title %}Fraud Alert #{{ alert.id }} - Votonomy Admin{% endblock %}
+{% block title %}Fraud Alert Details - Votonomy Admin{% endblock %}
 
 {% block content %}
+{% if alert %}
 <div class="dashboard-header">
   <a href="{{ url_for('admin_bp.fraud_dashboard') }}" class="btn-back">
     <i class="fas fa-arrow-left"></i> Back to Dashboard
@@ -45,7 +46,7 @@
 
     <div class="detail-item">
       <label>Detected At</label>
-      <p class="text-monospace">{{ alert.detected_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+      <p class="text-monospace">{{ alert.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
     </div>
 
     {% if alert.resolved_at %}
@@ -246,5 +247,16 @@
     </div>
   {% endif %}
 {% endwith %}
+
+{% else %}
+<div class="content-card">
+  <div class="alert alert-danger">
+    <i class="fas fa-exclamation-circle"></i> Alert not found or error loading alert data.
+  </div>
+  <a href="{{ url_for('admin_bp.fraud_dashboard') }}" class="btn btn-primary">
+    <i class="fas fa-arrow-left"></i> Back to Dashboard
+  </a>
+</div>
+{% endif %}
 
 {% endblock %}
