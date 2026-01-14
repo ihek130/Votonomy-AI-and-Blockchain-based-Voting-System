@@ -39,6 +39,8 @@ class Candidate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     candidate_name = db.Column(db.String(100), nullable=False)
     candidate_id = db.Column(db.String(100), unique=True, nullable=False)
+    position = db.Column(db.String(50), nullable=True)  # PM, MNA, MPA (extracted from candidate_id)
+    halka = db.Column(db.String(20), nullable=True)     # NA-52, NA-53, NA-54 (extracted from candidate_id)
     votes = db.Column(db.Integer, default=0)
 
 class Vote(db.Model):
@@ -194,6 +196,104 @@ class SentimentAnalytics(db.Model):
     
     def __repr__(self):
         return f'<SentimentAnalytics: {self.total_responses} responses>'
+
+
+# ============================================================================
+# POST-ELECTION SURVEY MODELS
+# ============================================================================
+
+class PostSurvey(db.Model):
+    """Structured post-election survey with Yes/No/Neutral responses"""
+    __tablename__ = 'post_survey'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    voter_id = db.Column(db.String(100), db.ForeignKey('voter.voter_id'), nullable=False)
+    
+    # ✅ Voting Experience (1=Positive, 0=Neutral, -1=Negative)
+    voting_ease = db.Column(db.Integer, nullable=False)  # Was voting process easy?
+    technical_issues = db.Column(db.Integer, nullable=False)  # Faced technical issues?
+    
+    # ✅ Election Transparency
+    blockchain_trust = db.Column(db.Integer, nullable=False)  # Trust blockchain system?
+    process_transparency = db.Column(db.Integer, nullable=False)  # Election transparent?
+    
+    # ✅ Candidate Quality
+    candidate_satisfaction = db.Column(db.Integer, nullable=False)  # Satisfied with candidates?
+    information_adequacy = db.Column(db.Integer, nullable=False)  # Well-informed about candidates?
+    
+    # ✅ Result Satisfaction
+    result_acceptance = db.Column(db.Integer, nullable=False)  # Accept results?
+    winner_satisfaction = db.Column(db.Integer, nullable=False)  # Satisfied with winners?
+    
+    # ✅ System Performance
+    system_performance = db.Column(db.Integer, nullable=False)  # System worked smoothly?
+    recommendation = db.Column(db.Integer, nullable=False)  # Recommend for future?
+    
+    # ✅ Overall Experience
+    overall_satisfaction = db.Column(db.Integer, nullable=False)  # Overall satisfaction?
+    system_preference = db.Column(db.Integer, nullable=False)  # Better than traditional?
+    
+    # ✅ Calculated Overall Sentiment
+    overall_sentiment = db.Column(db.String(20))  # Positive/Negative/Neutral
+    overall_score = db.Column(db.Float, default=0.0)  # Average of all responses
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def calculate_overall_sentiment(self):
+        """Calculate overall sentiment from all responses"""
+        responses = [
+            self.voting_ease, self.technical_issues,
+            self.blockchain_trust, self.process_transparency,
+            self.candidate_satisfaction, self.information_adequacy,
+            self.result_acceptance, self.winner_satisfaction,
+            self.system_performance, self.recommendation,
+            self.overall_satisfaction, self.system_preference
+        ]
+        
+        avg_score = sum(responses) / len(responses)
+        self.overall_score = round(avg_score, 2)
+        
+        if avg_score > 0.2:
+            self.overall_sentiment = 'Positive'
+        elif avg_score < -0.2:
+            self.overall_sentiment = 'Negative'
+        else:
+            self.overall_sentiment = 'Neutral'
+        
+        return self.overall_sentiment
+    
+    def __repr__(self):
+        return f'<PostSurvey {self.voter_id}: {self.overall_sentiment}>'
+
+
+class PostSurveyAnalytics(db.Model):
+    """Store aggregated post-survey analytics with pre/post comparison"""
+    __tablename__ = 'post_survey_analytics'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # ✅ Overall Statistics
+    total_responses = db.Column(db.Integer, default=0)
+    positive_percentage = db.Column(db.Float, default=0.0)
+    negative_percentage = db.Column(db.Float, default=0.0)
+    neutral_percentage = db.Column(db.Float, default=0.0)
+    average_satisfaction_score = db.Column(db.Float, default=0.0)
+    
+    # ✅ Topic-wise Analysis
+    topic_sentiments = db.Column(db.JSON, nullable=True)  # Post-survey topic breakdown
+    
+    # ✅ Geographic Analysis
+    halka_sentiments = db.Column(db.JSON, nullable=True)  # Satisfaction by halka
+    
+    # ✅ Pre/Post Comparison
+    comparison_data = db.Column(db.JSON, nullable=True)  # Before/After sentiment comparison
+    expectation_reality_gap = db.Column(db.JSON, nullable=True)  # Gap analysis per topic
+    sentiment_shift = db.Column(db.JSON, nullable=True)  # Topic-wise sentiment change
+    
+    last_updated = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<PostSurveyAnalytics: {self.total_responses} responses>'
 
 
 # ============================================================================

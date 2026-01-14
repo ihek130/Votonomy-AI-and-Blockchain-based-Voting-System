@@ -1,0 +1,480 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Post-Survey Analysis - Votonomy Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+  .stats-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+  }
+  
+  .stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+  }
+  
+  .stats-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+  }
+  
+  .stats-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: white;
+    background: linear-gradient(135deg, #01411C, #0F5132);
+  }
+  
+  .stats-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #01411C;
+    margin: 10px 0;
+  }
+  
+  .stats-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .sentiment-bar {
+    height: 30px;
+    border-radius: 5px;
+    overflow: hidden;
+    display: flex;
+    margin: 15px 0;
+  }
+  
+  .sentiment-positive {
+    background: #28a745;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  
+  .sentiment-neutral {
+    background: #ffc107;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #333;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  
+  .sentiment-negative {
+    background: #dc3545;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  
+  .chart-container {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+  }
+  
+  .chart-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #01411C;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #e9ecef;
+  }
+  
+  .topic-card {
+    background: #f8f9fa;
+    border-left: 4px solid #01411C;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+  
+  .topic-name {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 10px;
+  }
+  
+  .topic-stats {
+    display: flex;
+    gap: 15px;
+    font-size: 0.85rem;
+  }
+  
+  .topic-stat {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  .badge-positive {
+    background: #28a745;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  
+  .badge-negative {
+    background: #dc3545;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  
+  .badge-neutral {
+    background: #ffc107;
+    color: #333;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  
+  .halka-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+  }
+  
+  .halka-name {
+    font-weight: 600;
+    color: #01411C;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+  }
+  
+  .halka-sentiment {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  
+  .sentiment-positive-label {
+    background: #d4edda;
+    color: #155724;
+  }
+  
+  .sentiment-neutral-label {
+    background: #fff3cd;
+    color: #856404;
+  }
+  
+  .sentiment-negative-label {
+    background: #f8d7da;
+    color: #721c24;
+  }
+  
+  .comparison-card {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .comparison-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #01411C;
+    margin-bottom: 15px;
+  }
+  
+  .shift-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95rem;
+    margin: 8px 0;
+  }
+  
+  .shift-arrow {
+    font-size: 1.5rem;
+  }
+  
+  .shift-up {
+    color: #28a745;
+  }
+  
+  .shift-down {
+    color: #dc3545;
+  }
+  
+  .shift-stable {
+    color: #ffc107;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0">
+    <i class="fas fa-poll-h me-2"></i>
+    Post-Election Survey Analysis
+  </h2>
+  <div>
+    <button class="btn btn-success" onclick="exportReport()">
+      <i class="fas fa-download me-2"></i>Export Report
+    </button>
+  </div>
+</div>
+
+{% if analytics %}
+<!-- Summary Statistics -->
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="stats-card">
+      <div class="stats-header">
+        <div class="stats-icon">
+          <i class="fas fa-users"></i>
+        </div>
+      </div>
+      <div class="stats-value">{{ analytics.total_responses }}</div>
+      <div class="stats-label">Total Responses</div>
+    </div>
+  </div>
+  
+  <div class="col-md-3">
+    <div class="stats-card">
+      <div class="stats-header">
+        <div class="stats-icon" style="background: linear-gradient(135deg, #28a745, #20c997);">
+          <i class="fas fa-smile"></i>
+        </div>
+      </div>
+      <div class="stats-value" style="color: #28a745;">{{ analytics.positive_percentage }}%</div>
+      <div class="stats-label">Positive Sentiment</div>
+    </div>
+  </div>
+  
+  <div class="col-md-3">
+    <div class="stats-card">
+      <div class="stats-header">
+        <div class="stats-icon" style="background: linear-gradient(135deg, #ffc107, #fd7e14);">
+          <i class="fas fa-meh"></i>
+        </div>
+      </div>
+      <div class="stats-value" style="color: #ffc107;">{{ analytics.neutral_percentage }}%</div>
+      <div class="stats-label">Neutral Sentiment</div>
+    </div>
+  </div>
+  
+  <div class="col-md-3">
+    <div class="stats-card">
+      <div class="stats-header">
+        <div class="stats-icon" style="background: linear-gradient(135deg, #dc3545, #c82333);">
+          <i class="fas fa-frown"></i>
+        </div>
+      </div>
+      <div class="stats-value" style="color: #dc3545;">{{ analytics.negative_percentage }}%</div>
+      <div class="stats-label">Negative Sentiment</div>
+    </div>
+  </div>
+</div>
+
+<!-- Overall Sentiment Distribution -->
+<div class="chart-container">
+  <div class="chart-title">Overall Sentiment Distribution</div>
+  <div class="sentiment-bar">
+    <div class="sentiment-positive" data-width="{{ analytics.positive_percentage|default(0) }}">
+      {% if analytics.positive_percentage > 10 %}{{ analytics.positive_percentage }}%{% endif %}
+    </div>
+    <div class="sentiment-neutral" data-width="{{ analytics.neutral_percentage|default(0) }}">
+      {% if analytics.neutral_percentage > 10 %}{{ analytics.neutral_percentage }}%{% endif %}
+    </div>
+    <div class="sentiment-negative" data-width="{{ analytics.negative_percentage|default(0) }}">
+      {% if analytics.negative_percentage > 10 %}{{ analytics.negative_percentage }}%{% endif %}
+    </div>
+  </div>
+  <div class="d-flex justify-content-between mt-2" style="font-size: 0.85rem; color: #6c757d;">
+    <span><i class="fas fa-circle" style="color: #28a745;"></i> Positive ({{ analytics.positive_percentage }}%)</span>
+    <span><i class="fas fa-circle" style="color: #ffc107;"></i> Neutral ({{ analytics.neutral_percentage }}%)</span>
+    <span><i class="fas fa-circle" style="color: #dc3545;"></i> Negative ({{ analytics.negative_percentage }}%)</span>
+  </div>
+</div>
+
+<script>
+// Set sentiment bar widths from data attributes
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.sentiment-positive, .sentiment-neutral, .sentiment-negative').forEach(function(el) {
+    const width = el.getAttribute('data-width');
+    if (width) {
+      el.style.width = width + '%';
+    }
+  });
+});
+</script>
+
+<!-- Topic-wise Analysis -->
+<div class="chart-container">
+  <div class="chart-title">
+    <i class="fas fa-chart-pie me-2"></i>
+    Topic-wise Sentiment Analysis
+  </div>
+  
+  {% if analytics.topic_sentiments %}
+    <div class="row">
+      {% for topic, data in analytics.topic_sentiments.items() %}
+      <div class="col-md-6 mb-3">
+        <div class="topic-card">
+          <div class="topic-name">
+            <i class="fas fa-angle-right me-2"></i>{{ topic }}
+          </div>
+          <div class="topic-stats">
+            <div class="topic-stat">
+              <span class="badge-positive">+{{ data.positive_count }}</span>
+            </div>
+            <div class="topic-stat">
+              <span class="badge-neutral">~{{ data.neutral_count }}</span>
+            </div>
+            <div class="topic-stat">
+              <span class="badge-negative">-{{ data.negative_count }}</span>
+            </div>
+            <div class="ms-auto">
+              <strong>Avg: {{ data.average_score }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-muted">No topic data available</p>
+  {% endif %}
+</div>
+
+<!-- Sentiment Shift Comparison -->
+{% if analytics.sentiment_shift and analytics.sentiment_shift.overall %}
+<div class="comparison-card">
+  <div class="comparison-title">
+    <i class="fas fa-exchange-alt me-2"></i>
+    Pre-Election vs Post-Election Sentiment Shift
+  </div>
+  
+  <div class="row">
+    <div class="col-md-6">
+      <div class="shift-indicator">
+        <span><strong>Before Election:</strong></span>
+        <span class="badge bg-info">{{ analytics.sentiment_shift.overall.pre_positive_pct }}% Positive</span>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="shift-indicator">
+        <span><strong>After Election:</strong></span>
+        <span class="badge bg-success">{{ analytics.sentiment_shift.overall.post_positive_pct }}% Positive</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="text-center mt-3">
+    {% set change = analytics.sentiment_shift.overall.change %}
+    {% if change > 0 %}
+      <div class="shift-indicator justify-content-center">
+        <span class="shift-arrow shift-up">↑</span>
+        <span style="color: #28a745; font-weight: 600;">
+          Sentiment improved by {{ change }}%
+        </span>
+      </div>
+    {% elif change < 0 %}
+      <div class="shift-indicator justify-content-center">
+        <span class="shift-arrow shift-down">↓</span>
+        <span style="color: #dc3545; font-weight: 600;">
+          Sentiment decreased by {{ change|abs }}%
+        </span>
+      </div>
+    {% else %}
+      <div class="shift-indicator justify-content-center">
+        <span class="shift-arrow shift-stable">→</span>
+        <span style="color: #ffc107; font-weight: 600;">
+          Sentiment remained stable
+        </span>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Halka-wise Breakdown -->
+<div class="chart-container">
+  <div class="chart-title">
+    <i class="fas fa-map-marked-alt me-2"></i>
+    Halka-wise Sentiment Breakdown
+  </div>
+  
+  {% if analytics.halka_sentiments %}
+    <div class="row">
+      {% for halka, data in analytics.halka_sentiments.items() %}
+      <div class="col-md-4 mb-3">
+        <div class="halka-card">
+          <div class="halka-name">{{ halka }}</div>
+          <div class="mb-2">
+            <small class="text-muted">{{ data.count }} responses</small>
+          </div>
+          <div>
+            <span class="halka-sentiment sentiment-{{ data.sentiment_label.lower() }}-label">
+              {{ data.sentiment_label }}
+            </span>
+            <span class="ms-2 text-muted">
+              ({{ data.average_score|round(2) }})
+            </span>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-muted">No halka data available</p>
+  {% endif %}
+</div>
+
+<div class="text-center text-muted mt-4">
+  <small>
+    <i class="fas fa-clock me-2"></i>
+    Last Updated: {{ analytics.last_updated.strftime('%B %d, %Y at %I:%M %p') if analytics.last_updated else 'Never' }}
+  </small>
+</div>
+
+{% else %}
+<!-- No Data State -->
+<div class="chart-container text-center py-5">
+  <i class="fas fa-inbox" style="font-size: 4rem; color: #dee2e6;"></i>
+  <h4 class="mt-3 text-muted">No Survey Data Available</h4>
+  <p class="text-muted">Post-election survey responses will appear here once voters complete the survey.</p>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function exportReport() {
+  // Create export functionality
+  alert('Export functionality will be implemented');
+  // TODO: Implement Excel/PDF export
+}
+</script>
+{% endblock %}

@@ -410,10 +410,86 @@ def reject_voter(voter_id):
 @admin_login_required
 def manage_candidates():
     update_vote_counts()
+    
+    # Update position and halka fields if missing
+    for candidate in Candidate.query.all():
+        if not candidate.position or not candidate.halka:
+            parts = candidate.candidate_id.split('-')
+            if len(parts) >= 3:
+                candidate.halka = f"{parts[0]}-{parts[1]}"  # e.g., "NA-52"
+                candidate.position = parts[2]  # e.g., "President", "PrimeMinister"
+            db.session.commit()
+    
+    # Get filter parameters
+    position_filter = request.args.get('position', 'all')
+    halka_filter = request.args.get('halka', 'all')
+    
+    # Build query
+    query = Candidate.query
+    if position_filter != 'all':
+        query = query.filter_by(position=position_filter)
+    if halka_filter != 'all':
+        query = query.filter_by(halka=halka_filter)
+    
+    candidates = query.all()
+    
+    # Calculate total votes per position for percentages
+    total_votes = Vote.query.count()
+    
+    # Group candidates by position for result analysis
+    position_results = {}
+    for candidate in Candidate.query.all():
+        pos = candidate.position or 'Unknown'
+        if pos not in position_results:
+            position_results[pos] = []
+        position_results[pos].append(candidate)
+    
+    # Calculate position totals and identify winners
+    position_stats = {}
+    for pos, cands in position_results.items():
+        position_total = sum(c.votes for c in cands)
+        winner = max(cands, key=lambda c: c.votes) if cands else None
+        position_stats[pos] = {
+            'total_votes': position_total,
+            'winner_id': winner.candidate_id if winner and winner.votes > 0 else None,
+            'candidate_count': len(cands)
+        }
+    
+    # Calculate winners for each halka-position combination
+    halka_position_winners = {}
+    for candidate in Candidate.query.all():
+        if candidate.position and candidate.halka:
+            key = f"{candidate.halka}_{candidate.position}"
+            if key not in halka_position_winners:
+                halka_position_winners[key] = {
+                    'halka': candidate.halka,
+                    'position': candidate.position,
+                    'winner': candidate,
+                    'total_votes': 0
+                }
+            
+            # Track total votes for this halka-position
+            halka_position_winners[key]['total_votes'] += candidate.votes
+            
+            # Update winner if this candidate has more votes
+            if candidate.votes > halka_position_winners[key]['winner'].votes:
+                halka_position_winners[key]['winner'] = candidate
+    
+    # Get unique positions and halkas for filters
+    all_positions = sorted(set(c.position for c in Candidate.query.all() if c.position))
+    all_halkas = sorted(set(c.halka for c in Candidate.query.all() if c.halka))
+    
     return render_template(
         'manage_candidates.html',
-        candidates=Candidate.query.all(),
-        pending_candidate_requests=candidate_requests
+        candidates=candidates,
+        pending_candidate_requests=candidate_requests,
+        position_filter=position_filter,
+        halka_filter=halka_filter,
+        all_positions=all_positions,
+        all_halkas=all_halkas,
+        position_stats=position_stats,
+        halka_position_winners=halka_position_winners,
+        total_votes=total_votes
     )
 
 @admin_bp.route('/add-candidate', methods=['POST'])
@@ -570,6 +646,44 @@ def refresh_analytics():
         flash(f"❌ Error refreshing analytics: {str(e)}", "danger")
     
     return redirect(url_for('admin_bp.sentiment_analysis'))
+
+
+# ------------------------------
+# POST-SURVEY ANALYSIS ROUTES
+# ------------------------------
+@admin_bp.route('/post-survey/analysis')
+@admin_login_required
+def post_survey_analysis():
+    """Post-Election Survey Analysis Dashboard"""
+    from models import PostSurveyAnalytics
+    from app import update_post_survey_analytics
+    
+    # Auto-update analytics on page load
+    try:
+        update_post_survey_analytics()
+        print("✅ Post-survey analytics auto-updated on dashboard load")
+    except Exception as e:
+        print(f"❌ Error auto-updating post-survey analytics: {e}")
+    
+    # Get analytics record
+    analytics = PostSurveyAnalytics.query.first()
+    
+    return render_template("admin/post_survey_analysis.html", analytics=analytics)
+
+
+@admin_bp.route('/post-survey/refresh-analytics', methods=['POST'])
+@admin_login_required
+def refresh_post_analytics():
+    """Manually refresh post-survey analytics"""
+    from app import update_post_survey_analytics
+    
+    try:
+        update_post_survey_analytics()
+        flash("✅ Post-survey analytics refreshed successfully!", "success")
+    except Exception as e:
+        flash(f"❌ Error refreshing analytics: {str(e)}", "danger")
+    
+    return redirect(url_for('admin_bp.post_survey_analysis'))
 
 # ------------------------------
 # Blockchain Dashboard & Verification

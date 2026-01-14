@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Post-Election Survey - Votonomy</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+  <style>
+    body {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    .survey-container {
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 30px;
+    }
+    
+    .header-card {
+      background: linear-gradient(135deg, #01411C, #0F5132);
+      color: white;
+      padding: 30px;
+      border-radius: 15px;
+      margin-bottom: 30px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(1, 65, 28, 0.3);
+    }
+    
+    .header-card h1 {
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    
+    .header-card p {
+      font-size: 1.1rem;
+      opacity: 0.95;
+      margin: 0;
+    }
+    
+    .survey-card {
+      background: white;
+      border-radius: 15px;
+      padding: 30px;
+      margin-bottom: 25px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+      border-left: 5px solid #01411C;
+      transition: all 0.3s ease;
+    }
+    
+    .survey-card:hover {
+      transform: translateX(5px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+    }
+    
+    .topic-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #e9ecef;
+    }
+    
+    .topic-icon {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #01411C, #0F5132);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-right: 15px;
+      flex-shrink: 0;
+    }
+    
+    .topic-title {
+      color: #01411C;
+      font-weight: 700;
+      font-size: 1.3rem;
+      margin: 0;
+    }
+    
+    .question-block {
+      margin-bottom: 30px;
+    }
+    
+    .question-block:last-child {
+      margin-bottom: 0;
+    }
+    
+    .question-text {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 15px;
+    }
+    
+    .urdu-text {
+      font-size: 0.95rem;
+      color: #6c757d;
+      font-style: italic;
+      margin-bottom: 15px;
+      direction: rtl;
+      text-align: right;
+    }
+    
+    .options-container {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    
+    .option-label {
+      flex: 1;
+      min-width: 150px;
+      position: relative;
+      cursor: pointer;
+    }
+    
+    .option-label input[type="radio"] {
+      display: none;
+    }
+    
+    .option-box {
+      border: 2px solid #dee2e6;
+      border-radius: 10px;
+      padding: 15px 20px;
+      text-align: center;
+      transition: all 0.3s ease;
+      background: #f8f9fa;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    
+    .option-box:hover {
+      border-color: #01411C;
+      background: #f0f9f4;
+      transform: translateY(-2px);
+    }
+    
+    .option-label input[type="radio"]:checked + .option-box {
+      border-color: #01411C;
+      background: linear-gradient(135deg, #01411C, #0F5132);
+      color: white;
+      box-shadow: 0 5px 15px rgba(1, 65, 28, 0.3);
+    }
+    
+    .option-icon {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+    }
+    
+    .option-text {
+      font-size: 0.9rem;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    
+    .option-positive .option-icon { color: #28a745; }
+    .option-neutral .option-icon { color: #ffc107; }
+    .option-negative .option-icon { color: #dc3545; }
+    
+    .option-label input[type="radio"]:checked + .option-positive .option-icon,
+    .option-label input[type="radio"]:checked + .option-neutral .option-icon,
+    .option-label input[type="radio"]:checked + .option-negative .option-icon {
+      color: white;
+    }
+    
+    .btn-submit {
+      background: linear-gradient(135deg, #01411C, #0F5132);
+      color: white;
+      border: none;
+      padding: 15px 50px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border-radius: 10px;
+      transition: all 0.3s ease;
+      box-shadow: 0 5px 15px rgba(1, 65, 28, 0.3);
+    }
+    
+    .btn-submit:hover {
+      background: linear-gradient(135deg, #0F5132, #01411C);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(1, 65, 28, 0.4);
+    }
+    
+    .required-note {
+      color: #dc3545;
+      font-size: 0.9rem;
+      margin-top: 10px;
+    }
+    
+    .alert {
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="survey-container">
+    <!-- Header -->
+    <div class="header-card">
+      <h1><i class="fas fa-check-circle"></i> Post-Election Survey</h1>
+      <p>Thank you for voting! Please share your experience with us.</p>
+      <p style="font-size: 0.9rem; margin-top: 10px;">ووٹنگ کے لیے شکریہ! براہ کرم اپنا تجربہ ہمارے ساتھ شیئر کریں</p>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('post_survey') }}" id="surveyForm">
+      
+      <!-- 1. VOTING EXPERIENCE -->
+      <div class="survey-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="fas fa-vote-yea"></i>
+          </div>
+          <h2 class="topic-title">Voting Experience | ووٹنگ کا تجربہ</h2>
+        </div>
+        
+        <!-- Question 1.1 -->
+        <div class="question-block">
+          <div class="question-text">
+            <i class="fas fa-circle" style="font-size: 0.4rem; color: #01411C; margin-right: 5px;"></i>
+            Was the voting process easy and accessible?
+          </div>
+          <div class="urdu-text">
+            کیا ووٹنگ کا عمل آسان اور قابل رسائی تھا؟
+          </div>
+          <div class="options-container">
+            <label class="option-label">
+              <input type="radio" name="voting_ease" value="1" required>
+              <div class="option-box option-positive">
+                <div class="option-icon">✓</div>
+                <div class="option-text">Yes, Easy<br>جی ہاں، آسان</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="voting_ease" value="0" required>
+              <div class="option-box option-neutral">
+                <div class="option-icon">―</div>
+                <div class="option-text">Somewhat<br>کسی حد تک</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="voting_ease" value="-1" required>
+              <div class="option-box option-negative">
+                <div class="option-icon">✗</div>
+                <div class="option-text">Difficult<br>مشکل</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Question 1.2 -->
+        <div class="question-block">
+          <div class="question-text">
+            <i class="fas fa-circle" style="font-size: 0.4rem; color: #01411C; margin-right: 5px;"></i>
+            Did you face any technical issues during voting?
+          </div>
+          <div class="urdu-text">
+            کیا آپ کو ووٹنگ کے دوران کوئی تکنیکی مسائل کا سامنا کرنا پڑا؟
+          </div>
+          <div class="options-container">
+            <label class="option-label">
+              <input type="radio" name="technical_issues" value="1" required>
+              <div class="option-box option-positive">
+                <div class="option-icon">✓</div>
+                <div class="option-text">No Issues<br>کوئی مسئلہ نہیں</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="technical_issues" value="0" required>
+              <div class="option-box option-neutral">
+                <div class="option-icon">⚠</div>
+                <div class="option-text">Minor Issues<br>معمولی مسائل</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="technical_issues" value="-1" required>
+              <div class="option-box option-negative">
+                <div class="option-icon">✗</div>
+                <div class="option-text">Major Issues<br>بڑے مسائل</div>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. ELECTION TRANSPARENCY -->
+      <div class="survey-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+          <h2 class="topic-title">Election Transparency | انتخابی شفافیت</h2>
+        </div>
+        
+        <!-- Question 2.1 -->
+        <div class="question-block">
+          <div class="question-text">
+            <i class="fas fa-circle" style="font-size: 0.4rem; color: #01411C; margin-right: 5px;"></i>
+            Do you trust the blockchain-based voting system?
+          </div>
+          <div class="urdu-text">
+            کیا آپ بلاک چین پر مبنی ووٹنگ سسٹم پر بھروسہ کرتے ہیں؟
+          </div>
+          <div class="options-container">
+            <label class="option-label">
+              <input type="radio" name="blockchain_trust" value="1" required>
+              <div class="option-box option-positive">
+                <div class="option-icon">✓</div>
+                <div class="option-text">Yes, I Trust<br>جی ہاں، بھروسہ ہے</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="blockchain_trust" value="0" required>
+              <div class="option-box option-neutral">
+                <div class="option-icon">?</div>
+                <div class="option-text">Unsure<br>یقین نہیں</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="blockchain_trust" value="-1" required>
+              <div class="option-box option-negative">
+                <div class="option-icon">✗</div>
+                <div class="option-text">No Trust<br>بھروسہ نہیں</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Question 2.2 -->
+        <div class="question-block">
+          <div class="question-text">
+            <i class="fas fa-circle" style="font-size: 0.4rem; color: #01411C; margin-right: 5px;"></i>
+            Was the election process transparent and fair?
+          </div>
+          <div class="urdu-text">
+            کیا انتخابی عمل شفاف اور منصفانہ تھا؟
+          </div>
+          <div class="options-container">
+            <label class="option-label">
+              <input type="radio" name="process_transparency" value="1" required>
+              <div class="option-box option-positive">
+                <div class="option-icon">✓</div>
+                <div class="option-text">Yes, Fair<br>جی ہاں، منصفانہ</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="process_transparency" value="0" required>
+              <div class="option-box option-neutral">
+                <div class="option-icon">―</div>
+                <div class="option-text">Neutral<br>غیر جانبدار</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="process_transparency" value="-1" required>
+              <div class="option-box option-negative">
+                <div class="option-icon">✗</div>
+                <div class="option-text">Not Fair<br>منصفانہ نہیں</div>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. CANDIDATE QUALITY -->
+      <div class="survey-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="fas fa-users"></i>
+          </div>
+          <h2 class="topic-title">Candidate Quality | امیدواروں کا معیار</h2>
+        </div>
+        
+        <!-- Question 3.1 -->
+        <div class="question-block">
+          <div class="question-text">
+            <i class="fas fa-circle" style="font-size: 0.4rem; color: #01411C; margin-right: 5px;"></i>
+            Were you satisfied with the available candidate choices?
+          </div>
+          <div class="urdu-text">
+            کیا آپ دستیاب امیدواروں کے انتخاب سے مطمئن تھے؟
+          </div>
+          <div class="options-container">
+            <label class="option-label">
+              <input type="radio" name="candidate_satisfaction" value="1" required>
+              <div class="option-box option-positive">
+                <div class="option-icon">✓</div>
+                <div class="option-text">Satisfied<br>مطمئن</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="candidate_satisfaction" value="0" required>
+              <div class="option-box option-neutral">
+                <div class="option-icon">―</div>
+                <div class="option-text">Neutral<br>غیر جانبدار</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="candidate_satisfaction" value="-1" required>
+              <div class="option-box option-negative">
+                <div class="option-icon">✗</div>
+                <div class="option-text">Not Satisfied<br>مطمئن نہیں</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Question 3.2 -->
+        <div class="question-block">
+          <div class="question-text">
+            <i class="fas fa-circle" style="font-size: 0.4rem; color: #01411C; margin-right: 5px;"></i>
+            Did you feel well-informed about the candidates?
+          </div>
+          <div class="urdu-text">
+            کیا آپ کو امیدواروں کے بارے میں اچھی طرح سے معلومات تھیں؟
+          </div>
+          <div class="options-container">
+            <label class="option-label">
+              <input type="radio" name="information_adequacy" value="1" required>
+              <div class="option-box option-positive">
+                <div class="option-icon">✓</div>
+                <div class="option-text">Well-Informed<br>معلومات تھیں</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="information_adequacy" value="0" required>
+              <div class="option-box option-neutral">
+                <div class="option-icon">?</div>
+                <div class="option-text">Somewhat<br>کسی حد تک</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="information_adequacy" value="-1" required>
+              <div class="option-box option-negative">
+                <div class="option-icon">✗</div>
+                <div class="option-text">Not Informed<br>معلومات نہیں</div>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. RESULT SATISFACTION -->
+      <div class="survey-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="fas fa-chart-bar"></i>
+          </div>
+          <h2 class="topic-title">Result Satisfaction | نتائج سے اطمینان</h2>
+        </div>
+        
+        <!-- Question 4.1 -->
+        <div class="question-block">
+          <div class="question-text">
+            <i class="fas fa-circle" style="font-size: 0.4rem; color: #01411C; margin-right: 5px;"></i>
+            Do you accept the election results?
+          </div>
+          <div class="urdu-text">
+            کیا آپ انتخابی نتائج کو قبول کرتے ہیں؟
+          </div>
+          <div class="options-container">
+            <label class="option-label">
+              <input type="radio" name="result_acceptance" value="1" required>
+              <div class="option-box option-positive">
+                <div class="option-icon">✓</div>
+                <div class="option-text">Yes, I Accept<br>جی ہاں، قبول ہے</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="result_acceptance" value="0" required>
+              <div class="option-box option-neutral">
+                <div class="option-icon">?</div>
+                <div class="option-text">Partially<br>جزوی طور پر</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="result_acceptance" value="-1" required>
+              <div class="option-box option-negative">
+                <div class="option-icon">✗</div>
+                <div class="option-text">No, I Don't<br>نہیں، قبول نہیں</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Question 4.2 -->
+        <div class="question-block">
+          <div class="question-text">
+            <i class="fas fa-circle" style="font-size: 0.4rem; color: #01411C; margin-right: 5px;"></i>
+            Are you satisfied with the winning candidates?
+          </div>
+          <div class="urdu-text">
+            کیا آپ کامیاب امیدواروں سے مطمئن ہیں؟
+          </div>
+          <div class="options-container">
+            <label class="option-label">
+              <input type="radio" name="winner_satisfaction" value="1" required>
+              <div class="option-box option-positive">
+                <div class="option-icon">✓</div>
+                <div class="option-text">Satisfied<br>مطمئن</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="winner_satisfaction" value="0" required>
+              <div class="option-box option-neutral">
+                <div class="option-icon">―</div>
+                <div class="option-text">Neutral<br>غیر جانبدار</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="winner_satisfaction" value="-1" required>
+              <div class="option-box option-negative">
+                <div class="option-icon">✗</div>
+                <div class="option-text">Not Satisfied<br>مطمئن نہیں</div>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. SYSTEM PERFORMANCE -->
+      <div class="survey-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="fas fa-cog"></i>
+          </div>
+          <h2 class="topic-title">System Performance | سسٹم کی کارکردگی</h2>
+        </div>
+        
+        <!-- Question 5.1 -->
+        <div class="question-block">
+          <div class="question-text">
+            <i class="fas fa-circle" style="font-size: 0.4rem; color: #01411C; margin-right: 5px;"></i>
+            Did the electronic voting system work smoothly?
+          </div>
+          <div class="urdu-text">
+            کیا الیکٹرانک ووٹنگ سسٹم آسانی سے کام کر رہا تھا؟
+          </div>
+          <div class="options-container">
+            <label class="option-label">
+              <input type="radio" name="system_performance" value="1" required>
+              <div class="option-box option-positive">
+                <div class="option-icon">✓</div>
+                <div class="option-text">Yes, Smoothly<br>جی ہاں، آسانی سے</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="system_performance" value="0" required>
+              <div class="option-box option-neutral">
+                <div class="option-icon">⚠</div>
+                <div class="option-text">Some Issues<br>کچھ مسائل</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="system_performance" value="-1" required>
+              <div class="option-box option-negative">
+                <div class="option-icon">✗</div>
+                <div class="option-text">Many Problems<br>بہت سے مسائل</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Question 5.2 -->
+        <div class="question-block">
+          <div class="question-text">
+            <i class="fas fa-circle" style="font-size: 0.4rem; color: #01411C; margin-right: 5px;"></i>
+            Would you recommend this e-voting system for future elections?
+          </div>
+          <div class="urdu-text">
+            کیا آپ مستقبل کے انتخابات کے لیے اس ای-ووٹنگ سسٹم کی سفارش کریں گے؟
+          </div>
+          <div class="options-container">
+            <label class="option-label">
+              <input type="radio" name="recommendation" value="1" required>
+              <div class="option-box option-positive">
+                <div class="option-icon">✓</div>
+                <div class="option-text">Yes, Recommend<br>جی ہاں، سفارش</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="recommendation" value="0" required>
+              <div class="option-box option-neutral">
+                <div class="option-icon">?</div>
+                <div class="option-text">Maybe<br>شاید</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="recommendation" value="-1" required>
+              <div class="option-box option-negative">
+                <div class="option-icon">✗</div>
+                <div class="option-text">No<br>نہیں</div>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. OVERALL EXPERIENCE -->
+      <div class="survey-card">
+        <div class="topic-header">
+          <div class="topic-icon">
+            <i class="fas fa-star"></i>
+          </div>
+          <h2 class="topic-title">Overall Experience | مجموعی تجربہ</h2>
+        </div>
+        
+        <!-- Question 6.1 -->
+        <div class="question-block">
+          <div class="question-text">
+            <i class="fas fa-circle" style="font-size: 0.4rem; color: #01411C; margin-right: 5px;"></i>
+            Overall, how satisfied are you with this voting experience?
+          </div>
+          <div class="urdu-text">
+            مجموعی طور پر، آپ اس ووٹنگ کے تجربے سے کتنے مطمئن ہیں؟
+          </div>
+          <div class="options-container">
+            <label class="option-label">
+              <input type="radio" name="overall_satisfaction" value="1" required>
+              <div class="option-box option-positive">
+                <div class="option-icon">⭐</div>
+                <div class="option-text">Very Satisfied<br>بہت مطمئن</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="overall_satisfaction" value="0" required>
+              <div class="option-box option-neutral">
+                <div class="option-icon">―</div>
+                <div class="option-text">Neutral<br>غیر جانبدار</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="overall_satisfaction" value="-1" required>
+              <div class="option-box option-negative">
+                <div class="option-icon">☆</div>
+                <div class="option-text">Not Satisfied<br>مطمئن نہیں</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Question 6.2 -->
+        <div class="question-block">
+          <div class="question-text">
+            <i class="fas fa-circle" style="font-size: 0.4rem; color: #01411C; margin-right: 5px;"></i>
+            Do you believe this system is better than traditional voting?
+          </div>
+          <div class="urdu-text">
+            کیا آپ کو یقین ہے کہ یہ نظام روایتی ووٹنگ سے بہتر ہے؟
+          </div>
+          <div class="options-container">
+            <label class="option-label">
+              <input type="radio" name="system_preference" value="1" required>
+              <div class="option-box option-positive">
+                <div class="option-icon">✓</div>
+                <div class="option-text">Yes, Better<br>جی ہاں، بہتر</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="system_preference" value="0" required>
+              <div class="option-box option-neutral">
+                <div class="option-icon">≈</div>
+                <div class="option-text">About Same<br>تقریباً برابر</div>
+              </div>
+            </label>
+            <label class="option-label">
+              <input type="radio" name="system_preference" value="-1" required>
+              <div class="option-box option-negative">
+                <div class="option-icon">✗</div>
+                <div class="option-text">Traditional Better<br>روایتی بہتر</div>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="text-center mt-4">
+        <button type="submit" class="btn-submit">
+          <i class="fas fa-paper-plane me-2"></i>
+          Submit Survey | سروے جمع کریں
+        </button>
+        <p class="required-note mt-3">
+          <i class="fas fa-info-circle"></i> All questions are required | تمام سوالات لازمی ہیں
+        </p>
+      </div>
+
+    </form>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Form validation feedback
+    document.getElementById('surveyForm').addEventListener('submit', function(e) {
+      const radios = document.querySelectorAll('input[type="radio"]');
+      const questions = {};
+      
+      radios.forEach(radio => {
+        if (!questions[radio.name]) {
+          questions[radio.name] = false;
+        }
+        if (radio.checked) {
+          questions[radio.name] = true;
+        }
+      });
+      
+      const unanswered = Object.values(questions).filter(val => !val).length;
+      
+      if (unanswered > 0) {
+        e.preventDefault();
+        alert(`Please answer all ${unanswered} remaining question(s)\nبراہ کرم تمام ${unanswered} سوالات کے جوابات دیں`);
+        return false;
+      }
+    });
+  </script>
+</body>
+</html>

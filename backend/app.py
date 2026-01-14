@@ -177,6 +177,155 @@ def update_sentiment_analytics():
         print(f"Error updating sentiment analytics: {str(e)}")
         db.session.rollback()
 
+
+def update_post_survey_analytics():
+    """Update aggregated analytics for post-election survey"""
+    from models import PostSurvey, PostSurveyAnalytics, PreSurvey
+    
+    try:
+        # Get all post-surveys
+        all_post_surveys = PostSurvey.query.all()
+        
+        if not all_post_surveys:
+            print("No post-survey responses found")
+            return
+        
+        total_responses = len(all_post_surveys)
+        
+        # Calculate overall sentiment distribution
+        positive_count = sum(1 for s in all_post_surveys if s.overall_sentiment == 'Positive')
+        negative_count = sum(1 for s in all_post_surveys if s.overall_sentiment == 'Negative')
+        neutral_count = total_responses - positive_count - negative_count
+        
+        positive_percentage = (positive_count / total_responses) * 100
+        negative_percentage = (negative_count / total_responses) * 100
+        neutral_percentage = (neutral_count / total_responses) * 100
+        
+        # Calculate topic-wise sentiments
+        topic_sentiments = {}
+        
+        # Voting Experience
+        voting_exp_avg = sum([s.voting_ease + s.technical_issues for s in all_post_surveys]) / (total_responses * 2)
+        topic_sentiments['Voting Experience'] = {
+            'average_score': round(voting_exp_avg, 2),
+            'positive_count': sum(1 for s in all_post_surveys if (s.voting_ease + s.technical_issues) > 0),
+            'negative_count': sum(1 for s in all_post_surveys if (s.voting_ease + s.technical_issues) < 0),
+            'neutral_count': sum(1 for s in all_post_surveys if (s.voting_ease + s.technical_issues) == 0)
+        }
+        
+        # Election Transparency
+        transparency_avg = sum([s.blockchain_trust + s.process_transparency for s in all_post_surveys]) / (total_responses * 2)
+        topic_sentiments['Election Transparency'] = {
+            'average_score': round(transparency_avg, 2),
+            'positive_count': sum(1 for s in all_post_surveys if (s.blockchain_trust + s.process_transparency) > 0),
+            'negative_count': sum(1 for s in all_post_surveys if (s.blockchain_trust + s.process_transparency) < 0),
+            'neutral_count': sum(1 for s in all_post_surveys if (s.blockchain_trust + s.process_transparency) == 0)
+        }
+        
+        # Candidate Quality
+        candidate_avg = sum([s.candidate_satisfaction + s.information_adequacy for s in all_post_surveys]) / (total_responses * 2)
+        topic_sentiments['Candidate Quality'] = {
+            'average_score': round(candidate_avg, 2),
+            'positive_count': sum(1 for s in all_post_surveys if (s.candidate_satisfaction + s.information_adequacy) > 0),
+            'negative_count': sum(1 for s in all_post_surveys if (s.candidate_satisfaction + s.information_adequacy) < 0),
+            'neutral_count': sum(1 for s in all_post_surveys if (s.candidate_satisfaction + s.information_adequacy) == 0)
+        }
+        
+        # Result Satisfaction
+        result_avg = sum([s.result_acceptance + s.winner_satisfaction for s in all_post_surveys]) / (total_responses * 2)
+        topic_sentiments['Result Satisfaction'] = {
+            'average_score': round(result_avg, 2),
+            'positive_count': sum(1 for s in all_post_surveys if (s.result_acceptance + s.winner_satisfaction) > 0),
+            'negative_count': sum(1 for s in all_post_surveys if (s.result_acceptance + s.winner_satisfaction) < 0),
+            'neutral_count': sum(1 for s in all_post_surveys if (s.result_acceptance + s.winner_satisfaction) == 0)
+        }
+        
+        # System Performance
+        system_avg = sum([s.system_performance + s.recommendation for s in all_post_surveys]) / (total_responses * 2)
+        topic_sentiments['System Performance'] = {
+            'average_score': round(system_avg, 2),
+            'positive_count': sum(1 for s in all_post_surveys if (s.system_performance + s.recommendation) > 0),
+            'negative_count': sum(1 for s in all_post_surveys if (s.system_performance + s.recommendation) < 0),
+            'neutral_count': sum(1 for s in all_post_surveys if (s.system_performance + s.recommendation) == 0)
+        }
+        
+        # Overall Experience
+        overall_avg = sum([s.overall_satisfaction + s.system_preference for s in all_post_surveys]) / (total_responses * 2)
+        topic_sentiments['Overall Experience'] = {
+            'average_score': round(overall_avg, 2),
+            'positive_count': sum(1 for s in all_post_surveys if (s.overall_satisfaction + s.system_preference) > 0),
+            'negative_count': sum(1 for s in all_post_surveys if (s.overall_satisfaction + s.system_preference) < 0),
+            'neutral_count': sum(1 for s in all_post_surveys if (s.overall_satisfaction + s.system_preference) == 0)
+        }
+        
+        # Halka-wise sentiment
+        halka_sentiments = {}
+        for survey in all_post_surveys:
+            voter = Voter.query.filter_by(voter_id=survey.voter_id).first()
+            if voter and voter.halka:
+                if voter.halka not in halka_sentiments:
+                    halka_sentiments[voter.halka] = {'scores': [], 'count': 0}
+                halka_sentiments[voter.halka]['scores'].append(survey.overall_score)
+                halka_sentiments[voter.halka]['count'] += 1
+        
+        for halka in halka_sentiments:
+            scores = halka_sentiments[halka]['scores']
+            halka_sentiments[halka]['average_score'] = sum(scores) / len(scores)
+            halka_sentiments[halka]['sentiment_label'] = 'Positive' if halka_sentiments[halka]['average_score'] > 0.2 else 'Negative' if halka_sentiments[halka]['average_score'] < -0.2 else 'Neutral'
+        
+        # Compare with pre-survey data
+        comparison_data = {}
+        expectation_reality_gap = {}
+        sentiment_shift = {}
+        
+        all_pre_surveys = PreSurvey.query.all()
+        if all_pre_surveys:
+            # Overall sentiment shift
+            pre_positive = sum(1 for s in all_pre_surveys if s.overall_sentiment == 'Positive')
+            pre_total = len(all_pre_surveys)
+            pre_positive_pct = (pre_positive / pre_total) * 100
+            
+            sentiment_shift['overall'] = {
+                'pre_positive_pct': round(pre_positive_pct, 2),
+                'post_positive_pct': round(positive_percentage, 2),
+                'change': round(positive_percentage - pre_positive_pct, 2)
+            }
+            
+            # Topic-wise comparison
+            for topic in ['Economy', 'Government Performance', 'Security & Law', 'Education & Healthcare', 'Infrastructure', 'Future Expectations']:
+                # Map pre-survey topics to general expectations
+                if topic == 'Future Expectations':
+                    # Compare with overall satisfaction
+                    expectation_reality_gap[topic] = {
+                        'pre_avg': sum([s.future_optimism + s.future_confidence for s in all_pre_surveys]) / (len(all_pre_surveys) * 2),
+                        'post_avg': overall_avg,
+                        'gap': round(overall_avg - (sum([s.future_optimism + s.future_confidence for s in all_pre_surveys]) / (len(all_pre_surveys) * 2)), 2)
+                    }
+        
+        # Update or create analytics record
+        analytics = PostSurveyAnalytics.query.first()
+        if not analytics:
+            analytics = PostSurveyAnalytics()
+            db.session.add(analytics)
+        
+        analytics.total_responses = total_responses
+        analytics.positive_percentage = round(positive_percentage, 2)
+        analytics.negative_percentage = round(negative_percentage, 2)
+        analytics.neutral_percentage = round(neutral_percentage, 2)
+        analytics.topic_sentiments = topic_sentiments
+        analytics.halka_sentiments = halka_sentiments
+        analytics.comparison_data = comparison_data
+        analytics.expectation_reality_gap = expectation_reality_gap
+        analytics.sentiment_shift = sentiment_shift
+        analytics.last_updated = datetime.utcnow()
+        
+        db.session.commit()
+        print(f"✅ Post-survey analytics updated: {total_responses} responses processed")
+        
+    except Exception as e:
+        print(f"Error updating post-survey analytics: {str(e)}")
+        db.session.rollback()
+
 # ---------------------------
 # Home Page
 # ---------------------------
@@ -658,14 +807,90 @@ def cast_vote():
 # ---------------------------
 @app.route('/survey/post', methods=['GET', 'POST'])
 def post_survey():
+    from models import PostSurvey
+    
     if session.get('step') != 'voted':
         return redirect(url_for('cast_vote'))
 
-    if request.method == 'POST':
+    voter_id = session.get('voter_id')
+    
+    # Check if already completed
+    existing_survey = PostSurvey.query.filter_by(voter_id=voter_id).first()
+    if existing_survey and request.method == 'GET':
+        flash('You have already completed the post-election survey.', 'info')
         session['step'] = 'post_done'
         return redirect(url_for('confirm_vote'))
-
-    return render_template('post_survey.html')
+    
+    if request.method == 'POST':
+        try:
+            # Collect all 12 question responses
+            voting_ease = int(request.form.get('voting_ease'))
+            technical_issues = int(request.form.get('technical_issues'))
+            blockchain_trust = int(request.form.get('blockchain_trust'))
+            process_transparency = int(request.form.get('process_transparency'))
+            candidate_satisfaction = int(request.form.get('candidate_satisfaction'))
+            information_adequacy = int(request.form.get('information_adequacy'))
+            result_acceptance = int(request.form.get('result_acceptance'))
+            winner_satisfaction = int(request.form.get('winner_satisfaction'))
+            system_performance = int(request.form.get('system_performance'))
+            recommendation = int(request.form.get('recommendation'))
+            overall_satisfaction = int(request.form.get('overall_satisfaction'))
+            system_preference = int(request.form.get('system_preference'))
+            
+            # Create new survey record
+            if existing_survey:
+                # Update existing
+                existing_survey.voting_ease = voting_ease
+                existing_survey.technical_issues = technical_issues
+                existing_survey.blockchain_trust = blockchain_trust
+                existing_survey.process_transparency = process_transparency
+                existing_survey.candidate_satisfaction = candidate_satisfaction
+                existing_survey.information_adequacy = information_adequacy
+                existing_survey.result_acceptance = result_acceptance
+                existing_survey.winner_satisfaction = winner_satisfaction
+                existing_survey.system_performance = system_performance
+                existing_survey.recommendation = recommendation
+                existing_survey.overall_satisfaction = overall_satisfaction
+                existing_survey.system_preference = system_preference
+                existing_survey.created_at = datetime.utcnow()
+                survey = existing_survey
+            else:
+                # Create new
+                survey = PostSurvey(
+                    voter_id=voter_id,
+                    voting_ease=voting_ease,
+                    technical_issues=technical_issues,
+                    blockchain_trust=blockchain_trust,
+                    process_transparency=process_transparency,
+                    candidate_satisfaction=candidate_satisfaction,
+                    information_adequacy=information_adequacy,
+                    result_acceptance=result_acceptance,
+                    winner_satisfaction=winner_satisfaction,
+                    system_performance=system_performance,
+                    recommendation=recommendation,
+                    overall_satisfaction=overall_satisfaction,
+                    system_preference=system_preference
+                )
+                db.session.add(survey)
+            
+            db.session.commit()
+            
+            # Update analytics
+            update_post_survey_analytics()
+            
+            flash('Thank you for completing the post-election survey!', 'success')
+            session['step'] = 'post_done'
+            return redirect(url_for('confirm_vote'))
+            
+        except ValueError:
+            flash('Invalid survey data. Please ensure all questions are answered.', 'danger')
+            return render_template('post_survey_structured.html')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'An error occurred: {str(e)}', 'danger')
+            return render_template('post_survey_structured.html')
+    
+    return render_template('post_survey_structured.html')
 
 # ---------------------------
 # 6. Vote Confirmation
