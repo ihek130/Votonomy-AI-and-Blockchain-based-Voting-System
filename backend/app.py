@@ -873,6 +873,9 @@ def post_survey():
                 )
                 db.session.add(survey)
             
+            # Calculate overall sentiment before committing
+            survey.calculate_overall_sentiment()
+            
             db.session.commit()
             
             # Update analytics
