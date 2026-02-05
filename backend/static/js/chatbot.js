@@ -81,23 +81,7 @@ function sendMessage() {
   sendSound.play();
   showTyping();
 
-  // ✅ Handle complaint filing workflow
-  if (complaintMode && !waitingForEmail) {
-    complaintText = message;
-    waitingForEmail = true;
-    setTimeout(() => {
-      removeTyping();
-      appendMessage("bot", "Got it! Now please enter your email address so we can contact you about your complaint:");
-    }, 800);
-    return;
-  } else if (waitingForEmail) {
-    submitComplaint(message, complaintText);
-    complaintMode = false;
-    waitingForEmail = false;
-    return;
-  }
-
-  // ✅ Send message to backend
+  // ✅ Send ALL messages to backend - let backend handle complaint workflow
   fetch("/chatbot/message", {
     method: "POST",
     headers: { 
@@ -117,18 +101,6 @@ function sendMessage() {
       const reply = data.reply;
       receiveSound.play();
       appendMessage("bot", reply);
-
-      // ✅ Handle special bot responses
-      if (reply.toLowerCase().includes("write your complaint")) {
-        complaintMode = true;
-        waitingForEmail = false;
-      }
-      
-      // ✅ Reset modes when complaint is successfully filed
-      if (reply.includes("✅") && reply.includes("Complaint registered")) {
-        complaintMode = false;
-        waitingForEmail = false;
-      }
     })
     .catch(error => {
       removeTyping();

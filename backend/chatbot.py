@@ -14,10 +14,10 @@ load_dotenv()
 
 chatbot_bp = Blueprint('chatbot', __name__)
 
-# === Groq API Configuration (from .env file)
+# === xAI API Configuration (from .env file)
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
-GROQ_API_URL = os.getenv('GROQ_API_URL', 'https://api.groq.com/openai/v1/chat/completions')
-GROQ_MODEL = os.getenv('GROQ_MODEL', 'llama-3.1-8b-instant')
+GROQ_API_URL = os.getenv('GROQ_API_URL', 'https://api.x.ai/v1/chat/completions')
+GROQ_MODEL = os.getenv('GROQ_MODEL', 'grok-3')
 
 # ✅ MASSIVELY ENHANCED FAQ - Claude-level Intelligence
 faq_questions = [
@@ -568,6 +568,17 @@ def handle_chat():
         # Get session state
         state = get_session_state()
         
+        # DEBUG: Print session state
+        print(f"\n{'='*60}")
+        print(f"📥 USER MESSAGE: {user_msg}")
+        print(f"📊 SESSION STATE:")
+        print(f"   complaint_mode: {state['complaint_mode']}")
+        print(f"   waiting_for_email: {state['waiting_for_email']}")
+        print(f"   checking_complaint_status: {state['checking_complaint_status']}")
+        print(f"   mode_message_count: {state['mode_message_count']}")
+        print(f"   complaint_text in session: {session.get('complaint_text', 'NOT SET')}")
+        print(f"{'='*60}\n")
+        
         # ✅ CRITICAL FIX: If user sends greeting and is in ANY mode, AUTO-RESET (fresh start)
         greeting_words = ['hello', 'hi', 'hey', 'salam', 'assalam', 'good morning', 'good afternoon', 'good evening']
         is_simple_greeting = any(user_msg.lower().strip() == greeting for greeting in greeting_words)
@@ -616,8 +627,11 @@ def handle_chat():
                 print(f"⚠️ Auto-reset: User stuck in mode for {mode_count} messages")
                 return jsonify({"reply": "⏰ It seems you're having trouble. I've reset the conversation.\n\nHow can I help you with Votonomy voting or Pakistan information?"})
         
-        # ✅ FIRST: Check if it's a complaint ID (highest priority)
-        complaint_id = extract_complaint_id(user_msg)
+        # ✅ FIRST: Check if it's a complaint ID (highest priority) - BUT SKIP IF WAITING FOR EMAIL
+        complaint_id = None
+        if not state.get('waiting_for_email', False):  # Don't extract complaint ID when waiting for email
+            complaint_id = extract_complaint_id(user_msg)
+        
         if complaint_id:
             reset_conversation_modes()  # Clear any existing flags
             from models import Complaint
@@ -750,18 +764,24 @@ def handle_chat():
         if wants_to_file_complaint:
             reset_conversation_modes()
             update_session_state(complaint_mode=True, mode_message_count=0)
-            return jsonify({"reply": "Please write your complaint now. Also share your email in the next message.\n\n💡 Type 'cancel' to go back."})
+            print("🎯 DEBUG: Setting complaint_mode=True and asking for complaint text")
+            response = jsonify({"reply": "Please write your complaint now. Also share your email in the next message.\n\n💡 Type 'cancel' to go back."})
+            print(f"📤 DEBUG: Returning response: {response.get_json()}")
+            return response
 
         # ✅ HANDLE COMPLAINT FILING FLOW - FIXED with smart exit and off-topic detection
         if state['complaint_mode'] and not state['waiting_for_email']:
+            print("🔵 DEBUG: In complaint_mode, waiting for complaint text")
             # Check for cancel/exit keywords FIRST
             cancel_keywords = ['cancel', 'nevermind', 'forget it', 'back', 'exit', 'stop', 'no thanks']
             if any(keyword in msg_lower for keyword in cancel_keywords):
+                print("🔵 DEBUG: Cancel keyword detected")
                 reset_conversation_modes()
                 return jsonify({"reply": "Cancelled! How can I help you with Votonomy voting or Pakistan information?"})
             
             # ✅ CRITICAL: Detect off-topic questions (weather, movies, etc.) - AUTO EXIT
             if not is_question_relevant(user_msg):
+                print("🔵 DEBUG: Off-topic detected, exiting complaint mode")
                 reset_conversation_modes()
                 return jsonify({
                     "reply": "I only assist with Votonomy voting and Pakistan-related questions. Complaint filing cancelled.\n\n• How to register\n• Voting process\n• Pakistan info\n• File complaints\n\nHow can I help you?"
@@ -777,6 +797,7 @@ def handle_chat():
             ]
             
             if any(pattern in msg_lower for pattern in change_of_mind_patterns):
+                print("🔵 DEBUG: Change of mind detected")
                 reset_conversation_modes()
                 return jsonify({"reply": "No problem! Let me know if you need help with anything else about Votonomy or Pakistan."})
             
@@ -785,13 +806,18 @@ def handle_chat():
             if len(words) <= 3:
                 negative_words = ["no", "not", "dont", "don't", "never", "nope", "nah", "nothing"]
                 if any(neg in words for neg in negative_words):
+                    print("🔵 DEBUG: Short negative message detected")
                     reset_conversation_modes()
                     return jsonify({"reply": "No problem! How can I help you with Votonomy or Pakistan?"})
             
             # Valid complaint text - move to email stage
+            print(f"🔵 DEBUG: Valid complaint text received: {user_msg[:50]}")
             update_session_state(waiting_for_email=True)
             session['complaint_text'] = user_msg
-            return jsonify({"reply": "Got it! Now please enter your email address so we can contact you about your complaint:\n\n💡 Type 'cancel' to go back."})
+            print(f"🔵 DEBUG: Set waiting_for_email=True, stored complaint_text")
+            response = jsonify({"reply": "Got it! Now please enter your email address so we can contact you about your complaint:\n\n💡 Type 'cancel' to go back."})
+            print(f"📤 DEBUG: Returning response asking for email")
+            return response
         
         elif state['waiting_for_email']:
             # Check for cancel/exit keywords FIRST
@@ -801,54 +827,34 @@ def handle_chat():
                 session.pop('complaint_text', None)
                 return jsonify({"reply": "Complaint filing cancelled! How can I help you with Votonomy or Pakistan?"})
             
-            # ✅ Detect off-topic - auto exit
-            if not is_question_relevant(user_msg):
-                reset_conversation_modes()
-                session.pop('complaint_text', None)
-                return jsonify({"reply": "I only assist with Votonomy and Pakistan topics. Complaint cancelled.\n\nHow can I help you?"})
-            
-            # ✅ Detect change-of-mind
-            change_of_mind_patterns = [
-                "i don't have", "i dont have", "i do not have", "don't have", "dont have", "do not have",
-                "no complaint", "no complain", "no issue", "no problem", "nothing",
-                "actually no", "never mind", "not anymore", "changed my mind",
-                "nothing to complain", "forget it", "not interested",
-                "now i dont", "now i don't", "i dont", "i don't"
-            ]
-            
-            if any(pattern in msg_lower for pattern in change_of_mind_patterns):
-                reset_conversation_modes()
-                session.pop('complaint_text', None)
-                return jsonify({"reply": "No problem! Complaint filing cancelled. How can I help you with Votonomy or Pakistan?"})
-            
-            # Very short negative messages
-            words = msg_lower.split()
-            if len(words) <= 3:
-                negative_words = ["no", "not", "dont", "don't", "never", "nope", "nah", "nothing"]
-                if any(neg in words for neg in negative_words):
-                    reset_conversation_modes()
-                    session.pop('complaint_text', None)
-                    return jsonify({"reply": "Complaint cancelled. How can I help you?"})
-            
-            # ✅ VALIDATE EMAIL BEFORE SUBMITTING
+            # ✅ VALIDATE EMAIL IMMEDIATELY - Don't check relevance, emails won't have voting keywords!
             email = user_msg.strip()
             email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            
+            print(f"📧 DEBUG: Validating email: {email}")
+            
             if not re.match(email_pattern, email):
-                # EMAIL INVALID - Keep in waiting_for_email mode, DON'T reset
+                # EMAIL INVALID - mode_count already incremented at line 610, just return error
+                print(f"❌ DEBUG: Email validation failed for: {email}")
                 return jsonify({"reply": "❌ Please enter a valid email address (e.g., user@example.com).\n\n💡 Type 'cancel' to go back."})
             
             # Valid email - submit complaint
+            print(f"✅ DEBUG: Email valid, getting complaint text from session")
             complaint_text = session.get('complaint_text', 'No complaint text provided')
+            print(f"📝 DEBUG: Complaint text: {complaint_text}")
             reset_conversation_modes()
             session.pop('complaint_text', None)
-            return submit_complaint_internal(email, complaint_text)
+            print(f"🚀 DEBUG: Calling submit_complaint_internal")
+            result = submit_complaint_internal(email, complaint_text)
+            print(f"📤 DEBUG: Result from submit_complaint_internal: {result}")
+            return result
 
         # ✅ GREETING DETECTION: Handle greetings naturally with LLM
         greeting_words = ['hello', 'hi', 'hey', 'greetings', 'salam', 'assalam', 'good morning', 'good afternoon', 'good evening']
         is_greeting = any(greeting in msg_lower for greeting in greeting_words) and len(user_msg.split()) <= 5
         
-        # ✅ RELEVANCE CHECK with improved typo handling
-        if not is_question_relevant(user_msg) and not is_greeting:
+        # ✅ RELEVANCE CHECK with improved typo handling (skip if in complaint mode or waiting for email)
+        if not is_question_relevant(user_msg) and not is_greeting and not state['complaint_mode'] and not state['waiting_for_email']:
             return jsonify({
                 "reply": "I only assist with Votonomy voting system and Pakistan-related questions. I can help you with:\n\n• How to register for voting\n• Voting process in Votonomy\n• Pakistan history and geography\n• Election procedures\n• Filing complaints\n• Checking complaint status\n\nHow can I help you with voting or Pakistan?"
             })
@@ -867,11 +873,13 @@ def handle_chat():
             max_score = scores.max().item()
             best_match_idx = int(scores.argmax())
             
-            # Balanced threshold (0.45 = good precision/recall)
-            if max_score > 0.45:
+            # Higher threshold for better API usage (0.70 = high confidence only)
+            if max_score > 0.70:
                 matched_question = faq_questions[best_match_idx]
                 print(f"✅ FAQ Match: '{user_msg[:50]}' → '{matched_question}' (score: {max_score:.3f})")
                 return jsonify({"reply": faq_answers[best_match_idx]})
+            else:
+                print(f"📡 Sending to API: '{user_msg[:50]}' (best FAQ score: {max_score:.3f})")
 
         # Construct conversation with enhanced system prompt
         history = state['chat_history'][-4:]  # Keep last 4 exchanges
@@ -922,35 +930,49 @@ def handle_chat():
 # ✅ Enhanced Complaint Submission with better validation
 def submit_complaint_internal(email, complaint_text):
     """Internal function to handle complaint submission"""
+    print(f"\n🔧 DEBUG submit_complaint_internal called")
+    print(f"   Email: {email}")
+    print(f"   Complaint: {complaint_text}")
     try:
         email = email.strip()
         complaint_text = complaint_text.strip()
+        print(f"   After strip - Email: {email}, Complaint: {complaint_text}")
 
         if not email or not complaint_text:
+            print("   ❌ Email or complaint text missing")
             return jsonify({"reply": "❌ Both email and complaint text are required."})
         
         # Enhanced email validation
         email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         if not re.match(email_pattern, email):
+            print(f"   ❌ Email validation failed: {email}")
             return jsonify({"reply": "❌ Please enter a valid email address (e.g., user@example.com)."})
         
         # ✅ VERY LENIENT validation - accept almost any complaint
         if len(complaint_text) < 3:
+            print(f"   ❌ Complaint too short: {len(complaint_text)} chars")
             return jsonify({"reply": "❌ Please enter a complaint with at least 3 characters."})
         
         # Block only very generic/meaningless responses
         very_generic = ["hi", "hello", "test", ".", "ok", "yes", "no"]
         if complaint_text.lower().strip() in very_generic:
+            print(f"   ❌ Generic complaint: {complaint_text}")
             return jsonify({"reply": "❌ Please enter a proper complaint describing your issue."})
 
+        print("   ✅ All validations passed, creating complaint...")
         new_complaint = Complaint(email=email, complaint_text=complaint_text, status="Pending")
         db.session.add(new_complaint)
         db.session.commit()
+        print(f"   ✅ Complaint created with ID: {new_complaint.id}")
 
-        return jsonify({"reply": f"✅ Complaint registered successfully! Your complaint ID is C{new_complaint.id:04d}. You can check its status anytime using this ID."})
+        response = jsonify({"reply": f"✅ Complaint registered successfully! Your complaint ID is C{new_complaint.id:04d}. You can check its status anytime using this ID."})
+        print(f"   📤 Returning response: {response}")
+        return response
         
     except Exception as e:
-        print(f"Error in submit_complaint_internal: {str(e)}")
+        print(f"❌ Error in submit_complaint_internal: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"reply": "❌ Error submitting complaint. Please try again later."})
 
 # === Enhanced Complaint Submission (External endpoint)
